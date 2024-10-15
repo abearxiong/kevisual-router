@@ -36,7 +36,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/abearxiong/kevisual-router.git"
+    "url": "git+https://github.com/abearxiong/kevisual-router.git"
   },
   "dependencies": {
     "ws": "^8.18.0"
