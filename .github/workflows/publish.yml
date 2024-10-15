@@ -1,0 +1,38 @@
+name: Publish to npm
+on:
+  push:
+    tags:
+      - 'v*.*.*'   # 当推送带有版本号的 tag 时触发，例如 v1.0.0
+  workflow_dispatch:   # 添加手动触发器
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Clone current Git repository
+      - name: Checkout this repository
+        uses: actions/checkout@v3
+      # Step 3: Setup Node.js and install dependencies
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.6'
+          registry-url: 'https://registry.npmjs.org/'
+          cache: 'npm'         # 启用 npm 缓存，提高安装速度
+      - name: Configure npm authentication
+        run: npm config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
+      - name: Install dependencies
+        run: npm install
+      - name: Build project
+        run: npm run build
+      # Step 6: 发布到 npm
+      - name: Publish package
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # Step 7: 发布成功后，更新版本标签
+      # - name: Create Git tag
+      #   run: |
+      #     TAG="v$(node -p -e "require('./package.json').version")"
+      #     git tag $TAG
+      #     git push origin $TAG

@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json.schemastore.org/package",
+  "name": "@kevisual/router",
+  "version": "0.0.2",
+  "description": "",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "npm run clean && rollup -c",
+    "watch": "rollup -c -w",
+    "clean": "rm -rf dist"
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^26.0.1",
+    "@rollup/plugin-node-resolve": "^15.2.4",
+    "@rollup/plugin-typescript": "^12.1.0",
+    "@types/lodash-es": "^4.17.12",
+    "@types/node": "^22.5.5",
+    "@types/ws": "^8.5.12",
+    "lodash-es": "^4.17.21",
+    "nanoid": "^5.0.7",
+    "rollup": "^4.22.4",
+    "ts-loader": "^9.5.1",
+    "ts-node": "^10.9.2",
+    "tslib": "^2.7.0",
+    "typescript": "^5.6.2",
+    "zod": "^3.23.8"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/abearxiong/kevisual-router.git"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

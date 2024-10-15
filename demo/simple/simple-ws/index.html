@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebSocket with Redis</title>
+</head>
+
+<body>
+  <h1>Real-time Data Updates</h1>
+  <p id="output">Waiting for updates...</p>
+
+  <script>
+    // const ws = new WebSocket('ws://localhost:4002/api/router');
+    const ws = new WebSocket('ws://192.168.31.220:4002/api/router');
+
+    // 当连接成功时
+    ws.onopen = () => {
+      console.log('Connected to WebSocket server');
+
+      // 订阅数据 ID 为 1 的更新
+      // const message = JSON.stringify({ type: 'subscribe', dataId: '1' });
+      // ws.send(message);
+      const message = JSON.stringify({
+        type: 'router',
+        data: {
+          path: 'demo',
+          key: '01',
+        }
+      });
+      ws.send(message);
+    };
+
+    // 接收服务器的消息
+    ws.onmessage = (event) => {
+      const parseIfJson = (data) => {
+        try {
+          return JSON.parse(data);
+        } catch (error) {
+          return data;
+        }
+      };
+      const appendChild = (text) => {
+        const t = document.createElement('div');
+        t.innerText = text;
+        document.body.appendChild(t);
+      };
+      console.log('Received:', event.data);
+      const message = parseIfJson(event.data);
+      if (typeof message === 'string') {
+        appendChild(message);
+        return;
+      }
+
+      if (message.type === 'router') {
+        const res = message.data;
+        const text = `Data Updated: ${JSON.stringify(res)}`;
+        appendChild(text);
+        console.log('Data updated:', res);
+      } else {
+        document.querySelector('#output').innerText = event.data;
+        console.log('Unknown message type:', message.type);
+      }
+    };
+
+    // 处理 WebSocket 关闭
+    ws.onclose = () => {
+      console.log('Disconnected from WebSocket server');
+    };
+  </script>
+</body>
+
+</html>

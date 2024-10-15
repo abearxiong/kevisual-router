@@ -1,0 +1,43 @@
+{
+  "compilerOptions": {
+    "module": "NodeNext",
+    "target": "esnext",
+    "noImplicitAny": false,
+    "outDir": "./dist",
+    "sourceMap": false,
+    "allowJs": true,
+    "newLine": "LF",
+    "baseUrl": "./",
+    "typeRoots": [
+      "node_modules/@types",
+    ],
+    "declaration": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "moduleResolution": "NodeNext",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "esModuleInterop": true,
+    "paths": {
+      "@/*": [
+        "src/*"
+      ],
+      "*": [
+        "types/*"
+      ]
+    }
+  },
+  "include": [
+    "typings.d.ts",
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/**/*.test.ts",
+    "rollup.config.js",
+  ],
+  "ts-node": {
+    "esm": true
+  }
+}
