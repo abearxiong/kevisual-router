@@ -461,7 +461,7 @@ export class QueryRouter {
     if (!message?.path) {
       return Promise.resolve({ code: 404, body: 'Not found path' });
     }
-    const { path, key, payload = {}, ...query } = message;
+    const { path, key = '', payload = {}, ...query } = message;
     ctx = ctx || {};
     ctx.query = { ...ctx.query, ...query, ...payload };
     ctx.state = {};
