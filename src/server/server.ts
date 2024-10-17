@@ -80,6 +80,7 @@ export class Server {
       res.setHeader('Content-Type', 'application/json; charset=utf-8');
       if (cors) {
         res.setHeader('Access-Control-Allow-Origin', cors?.origin || '*'); // 允许所有域名的请求访问，可以根据需要设置具体的域名
+        res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
         if (req.method === 'OPTIONS') {
           res.end();
