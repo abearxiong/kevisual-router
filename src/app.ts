@@ -81,4 +81,13 @@ export class App<T = {}> {
     const router = this.router;
     return await router.parse(message, ctx);
   }
+  exportRoutes() {
+    return this.router.exportRoutes();
+  }
+  importRoutes(routes: any[]) {
+    this.router.importRoutes(routes);
+  }
+  importApp(app: App) {
+    this.importRoutes(app.exportRoutes());
+  }
 }

@@ -1,4 +1,4 @@
-import { Route, QueryRouter, RouteContext } from '@abearxiong/router';
+import { Route, QueryRouter, RouteContext } from '@kevisual/router';
 const qr = new QueryRouter();
 
 qr.add(

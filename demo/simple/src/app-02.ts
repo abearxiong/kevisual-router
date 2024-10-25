@@ -1,4 +1,4 @@
-import { App } from '@abearxiong/router';
+import { App } from '@kevisual/router';
 
 const app = new App();
 

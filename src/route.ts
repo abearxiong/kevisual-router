@@ -439,7 +439,7 @@ export class QueryRouter {
           return await this.runRoute(path, key, ctx);
         }
         // clear body
-        ctx.body = JSON.parse(JSON.stringify(ctx.body||''));
+        ctx.body = JSON.parse(JSON.stringify(ctx.body || ''));
         if (!ctx.code) ctx.code = 200;
         return ctx;
       } else {
@@ -491,6 +491,19 @@ export class QueryRouter {
       const { code, body, message } = res;
       return { code, data: body, message };
     };
+  }
+  exportRoutes() {
+    return this.routes.map((r) => {
+      return r;
+    });
+  }
+  importRoutes(routes: Route[]) {
+    for (let route of routes) {
+      this.add(route);
+    }
+  }
+  importRouter(router: QueryRouter) {
+    this.importRoutes(router.routes);
   }
 }
 
