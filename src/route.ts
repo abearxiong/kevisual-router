@@ -34,7 +34,7 @@ export type RouteContext<T = { code?: number }, S = any> = {
   index?: number;
 } & T;
 
-export type Run<T = any> = (ctx?: RouteContext<T>) => Promise<typeof ctx | null | void>;
+export type Run<T = any> = (ctx: RouteContext<T>) => Promise<typeof ctx | null | void>;
 
 export type NextRoute = Pick<Route, 'id' | 'path' | 'key'>;
 export type RouteOpts = {
