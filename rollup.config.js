@@ -6,19 +6,39 @@ import commonjs from '@rollup/plugin-commonjs';
 /**
  * @type {import('rollup').RollupOptions}
  */
-export default {
-  input: 'src/index.ts', // TypeScript 入口文件
-  output: {
-    file: 'dist/index.js', // 输出文件
-    format: 'es', // 输出格式设置为 ES 模块
+export default [
+  {
+    input: 'src/index.ts', // TypeScript 入口文件
+    output: {
+      file: 'dist/index.js', // 输出文件
+      format: 'es', // 输出格式设置为 ES 模块
+    },
+    plugins: [
+      resolve(), // 使用 @rollup/plugin-node-resolve 解析 node_modules 中的模块
+      // commonjs(),
+      typescript({
+        allowImportingTsExtensions: true,
+        noEmit: true,
+      }), // 使用 @rollup/plugin-typescript 处理 TypeScript 文件
+    ],
+    external: ['ws'],
   },
-  plugins: [
-    resolve(), // 使用 @rollup/plugin-node-resolve 解析 node_modules 中的模块
-    // commonjs(),
-    typescript({
-      allowImportingTsExtensions: true,
-      noEmit: true,
-    }), // 使用 @rollup/plugin-typescript 处理 TypeScript 文件
-  ],
-  external: ['ws']
-};
+  {
+    input: 'src/route.ts',
+    output: {
+      file: 'dist/route.js',
+      format: 'es',
+    },
+    plugins: [
+      resolve({
+        browser: true,
+      }),
+      commonjs(),
+      typescript({
+        allowImportingTsExtensions: true,
+        noEmit: true,
+        declaration: false,
+      }),
+    ],
+  },
+];

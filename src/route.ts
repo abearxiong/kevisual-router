@@ -528,4 +528,42 @@ export class QueryRouterServer extends QueryRouter {
   setHandle(wrapperFn?: HandleFn, ctx?: RouteContext) {
     this.handle = this.getHandle(this, wrapperFn, ctx);
   }
+  use(path: string, fn: (ctx: any) => any, opts?: RouteOpts) {
+    const route = new Route(path, '', opts);
+    route.run = fn;
+    this.add(route);
+  }
+  addRoute(route: Route) {
+    this.add(route);
+  }
+
+  Route = Route;
+  route(opts: RouteOpts): Route;
+  route(path: string, key?: string): Route;
+  route(path: string, opts?: RouteOpts): Route;
+  route(path: string, key?: string, opts?: RouteOpts): Route;
+  route(...args: any[]) {
+    const [path, key, opts] = args;
+    if (typeof path === 'object') {
+      return new Route(path.path, path.key, path);
+    }
+    if (typeof path === 'string') {
+      if (opts) {
+        return new Route(path, key, opts);
+      }
+      if (key && typeof key === 'object') {
+        return new Route(path, key?.key || '', key);
+      }
+      return new Route(path, key);
+    }
+    return new Route(path, key, opts);
+  }
+  async call(message: { path: string; key: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
+    return await this.parse(message, ctx);
+  }
+  async run({ path, key, payload }: { path: string; key: string; payload?: any }) {
+    const handle = this.handle;
+    const end = handle({ path, key, ...payload });
+    return end;
+  }
 }

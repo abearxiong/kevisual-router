@@ -11,11 +11,6 @@ export { Server, handleServer } from './server/index.ts';
  */
 export { CustomError } from './result/error.ts';
 
-/**
- * 返回结果
- */
-export { Result } from './result/index.ts';
-
 export { Rule, Schema, createSchema } from './validator/index.ts';
 
 export { App } from './app.ts';
