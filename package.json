@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/package",
   "name": "@kevisual/router",
-  "version": "0.0.4-alpha-4",
+  "version": "0.0.4-alpha-5",
   "description": "",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -50,8 +50,8 @@
       "require": "./dist/index.js"
     },
     "./browser": {
-      "import": "./dist/route.js",
-      "require": "./dist/route.js"
+      "import": "./dist/browser.js",
+      "require": "./dist/browser.js"
     }
   }
 }

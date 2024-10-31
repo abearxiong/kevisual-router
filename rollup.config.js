@@ -24,9 +24,9 @@ export default [
     external: ['ws'],
   },
   {
-    input: 'src/route.ts',
+    input: 'src/browser.ts',
     output: {
-      file: 'dist/route.js',
+      file: 'dist/browser.js',
       format: 'es',
     },
     plugins: [
@@ -37,7 +37,7 @@ export default [
       typescript({
         allowImportingTsExtensions: true,
         noEmit: true,
-        declaration: false,
+        declaration: true,
       }),
     ],
   },

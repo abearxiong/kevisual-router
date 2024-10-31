@@ -563,7 +563,25 @@ export class QueryRouterServer extends QueryRouter {
   }
   async run({ path, key, payload }: { path: string; key: string; payload?: any }) {
     const handle = this.handle;
-    const end = handle({ path, key, ...payload });
-    return end;
+    const resultError = (error: string, code = 500) => {
+      const r = {
+        code: code,
+        message: error,
+      };
+      return r;
+    };
+    try {
+      const end = handle({ path, key, ...payload });
+      return end;
+    } catch (e) {
+      if (e.code && typeof e.code === 'number') {
+        return {
+          code: e.code,
+          message: e.message,
+        };
+      } else {
+        return resultError('Router Server error');
+      }
+    }
   }
 }
