@@ -1,3 +1,6 @@
 node_modules
 src/app.config.json5
 dist
+.npmrc
+
+.turbo

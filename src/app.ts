@@ -1,6 +1,8 @@
 import { QueryRouter, Route, RouteContext, RouteOpts } from './route.ts';
 import { Server, Cors } from './server/server.ts';
 import { WsServer } from './server/ws-server.ts';
+import { CustomError } from './result/error.ts';
+
 type RouterHandle = (msg: { path: string; [key: string]: any }) => { code: string; data?: any; message?: string; [key: string]: any };
 type AppOptions<T = {}> = {
   router?: QueryRouter;
@@ -90,4 +92,9 @@ export class App<T = {}> {
   importApp(app: App) {
     this.importRoutes(app.exportRoutes());
   }
+  throw(code?: number | string, message?: string, tips?: string): void;
+  throw(...args: any[]) {
+    throw new CustomError(...args);
+  }
 }
+

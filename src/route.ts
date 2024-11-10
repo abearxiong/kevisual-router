@@ -32,6 +32,7 @@ export type RouteContext<T = { code?: number }, S = any> = {
   error?: any;
   call?: (message: { path: string; key: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) => Promise<any>;
   index?: number;
+  throw?: (code?: number | string, message?: string, tips?: string) => void;
 } & T;
 
 export type Run<T = any> = (ctx: RouteContext<T>) => Promise<typeof ctx | null | void>;
@@ -252,6 +253,10 @@ export class Route {
     this.data = data;
     return this;
   }
+  throw(code?: number | string, message?: string, tips?: string): void;
+  throw(...args: any[]) {
+    throw new CustomError(...args);
+  }
 }
 
 export class QueryRouter {
@@ -465,6 +470,7 @@ export class QueryRouter {
     ctx = ctx || {};
     ctx.query = { ...ctx.query, ...query, ...payload };
     ctx.state = {};
+    ctx.throw = this.throw;
     // put queryRouter to ctx
     // TODO: 是否需要queryRouter，函数内部处理router路由执行，这应该是避免去内部去包含的功能过
     ctx.queryRouter = this;
@@ -504,6 +510,10 @@ export class QueryRouter {
   }
   importRouter(router: QueryRouter) {
     this.importRoutes(router.routes);
+  }
+  throw(code?: number | string, message?: string, tips?: string): void;
+  throw(...args: any[]) {
+    throw new CustomError(...args);
   }
 }
 
