@@ -262,6 +262,7 @@ export class Route {
 export class QueryRouter {
   routes: Route[];
   maxNextRoute = 40;
+  context?: RouteContext = {}; // default context for call
   constructor() {
     this.routes = [];
   }
@@ -479,7 +480,10 @@ export class QueryRouter {
     return await this.runRoute(path, key, ctx);
   }
   async call(message: { path: string; key: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
-    return await this.parse(message, ctx);
+    return await this.parse(message, { ...this.context, ...ctx });
+  }
+  async setContext(ctx: RouteContext) {
+    this.context = ctx;
   }
   getList(): RouteInfo[] {
     return this.routes.map((r) => {
@@ -534,6 +538,7 @@ export class QueryRouterServer extends QueryRouter {
   constructor(opts?: QueryRouterServerOpts) {
     super();
     this.handle = this.getHandle(this, opts?.handleFn, opts?.context);
+    this.setContext(opts?.context);
   }
   setHandle(wrapperFn?: HandleFn, ctx?: RouteContext) {
     this.handle = this.getHandle(this, wrapperFn, ctx);

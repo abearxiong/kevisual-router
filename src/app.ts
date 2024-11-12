@@ -26,7 +26,7 @@ export class App<T = {}> {
     const router = opts?.router || new QueryRouter();
     const server = opts?.server || new Server(opts?.serverOptions || {});
     server.setHandle(router.getHandle(router, opts?.routerHandle, opts?.routerContext));
-
+    router.setContext(opts?.routerContext);
     this.router = router;
     this.server = server;
     if (opts?.io) {
@@ -81,7 +81,7 @@ export class App<T = {}> {
   }
   async call(message: { path: string; key: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
     const router = this.router;
-    return await router.parse(message, ctx);
+    return await router.call(message, ctx);
   }
   exportRoutes() {
     return this.router.exportRoutes();
@@ -97,4 +97,3 @@ export class App<T = {}> {
     throw new CustomError(...args);
   }
 }
-
