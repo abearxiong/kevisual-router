@@ -14,6 +14,9 @@ type AppOptions<T = {}> = {
     path?: string;
     cors?: Cors;
     handle?: any;
+    isHTTPS?: boolean;
+    httpsKey?: string;
+    httpsCert?: string;
   };
   io?: boolean;
   ioOpts?: { routerHandle?: RouterHandle; routerContext?: RouteContext<T>; path?: string };

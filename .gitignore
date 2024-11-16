@@ -4,3 +4,6 @@ dist
 .npmrc
 
 .turbo
+
+https-cert.pem
+https-key.pem

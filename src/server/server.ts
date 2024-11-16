@@ -1,6 +1,6 @@
 import http, { IncomingMessage, ServerResponse } from 'http';
+import https from 'https';
 import { handleServer } from './handle-server.ts';
-
 export type Listener = (...args: any[]) => void;
 
 export type Cors = {
@@ -9,12 +9,15 @@ export type Cors = {
    */
   origin?: string | undefined;
 };
-type ServerOpts = {
+export type ServerOpts = {
   /**path default `/api/router` */
   path?: string;
   /**handle Fn */
   handle?: (msg?: { path: string; key?: string; [key: string]: any }) => any;
   cors?: Cors;
+  isHTTPS?: boolean;
+  httpsKey?: string;
+  httpsCert?: string;
 };
 export const resultError = (error: string, code = 500) => {
   const r = {
@@ -31,10 +34,20 @@ export class Server {
   private _callback: any;
   private cors: Cors;
   private hasOn = false;
+  private isHTTPS = false;
+  private options = {
+    key: '',
+    cert: '',
+  };
   constructor(opts?: ServerOpts) {
     this.path = opts?.path || '/api/router';
     this.handle = opts?.handle;
     this.cors = opts?.cors;
+    this.isHTTPS = opts?.isHTTPS || false;
+    this.options = {
+      key: opts?.httpsKey || '',
+      cert: opts?.httpsCert || '',
+    };
   }
   listen(port: number, hostname?: string, backlog?: number, listeningListener?: () => void): void;
   listen(port: number, hostname?: string, listeningListener?: () => void): void;
@@ -45,10 +58,28 @@ export class Server {
   listen(handle: any, backlog?: number, listeningListener?: () => void): void;
   listen(handle: any, listeningListener?: () => void): void;
   listen(...args: any[]) {
-    this._server = http.createServer();
+    this._server = this.createServer();
     const callback = this.createCallback();
     this._server.on('request', callback);
     this._server.listen(...args);
+  }
+  createServer() {
+    let server: http.Server | https.Server;
+    if (this.isHTTPS) {
+      if (this.options.key && this.options.cert) {
+        server = https.createServer({
+          key: this.options.key,
+          cert: this.options.cert,
+        });
+        console.log('https server');
+        return server;
+      } else {
+        console.error('https key and cert is required');
+        console.log('downgrade to http');
+      }
+    }
+    server = http.createServer();
+    return server;
   }
   setHandle(handle?: any) {
     this.handle = handle;
@@ -65,7 +96,7 @@ export class Server {
       if (req.url === '/favicon.ico') {
         return;
       }
-      
+
       if (res.headersSent) {
         // 程序已经在其他地方响应了
         return;
@@ -130,7 +161,7 @@ export class Server {
    * @param listener
    */
   on(listener: Listener | Listener[]) {
-    this._server = this._server || http.createServer();
+    this._server = this._server || this.createServer();
     this._server.removeAllListeners('request');
     this.hasOn = true;
     if (Array.isArray(listener)) {
