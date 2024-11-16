@@ -52,11 +52,6 @@ export class SimpleRouter {
       return handlers.reduce((promiseChain, handler) => promiseChain.then(() => Promise.resolve(handler(req, res))), Promise.resolve());
     }
 
-    if (!res?.headersSent && res && res?.end) {
-      res.statusCode = 404;
-      res.end('Not Found');
-    } else {
-      console.error('Not Found');
-    }
+    return 'not_found';
   }
 }
