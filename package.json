@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/package",
   "name": "@kevisual/router",
-  "version": "0.0.4",
+  "version": "0.0.5-alpha-0",
   "description": "",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -41,6 +41,7 @@
     "url": "git+https://github.com/abearxiong/kevisual-router.git"
   },
   "dependencies": {
+    "path-to-regexp": "^8.2.0",
     "selfsigned": "^2.4.1",
     "ws": "^8.18.0"
   },
@@ -59,6 +60,10 @@
     "./sign": {
       "import": "./dist/router-sign.js",
       "require": "./dist/router-sign.js"
+    },
+    "./simple": {
+      "import": "./dist/router-simple.js",
+      "require": "./dist/router-simple.js"
     }
   }
 }

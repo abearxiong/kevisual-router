@@ -73,4 +73,26 @@ export default [
     },
     plugins: [dts()],
   },
+  {
+    input: 'src/router-simple.ts',
+    output: {
+      file: 'dist/router-simple.js',
+      format: 'es',
+    },
+    plugins: [
+      resolve({
+        browser: false,
+      }),
+      commonjs(),
+      typescript(),
+    ],
+  },
+  {
+    input: 'src/router-simple.ts',
+    output: {
+      file: 'dist/router-simple.d.ts',
+      format: 'es',
+    },
+    plugins: [dts()],
+  },
 ];
