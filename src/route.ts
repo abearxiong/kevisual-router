@@ -363,10 +363,11 @@ export class QueryRouter {
           } catch (e) {
             if (route?.isDebug) {
               console.error('=====debug====:middlerware error');
+              console.error('=====debug====:', e);
               console.error('=====debug====:[path:key]:', `${route.path}-${route.key}`);
               console.error('=====debug====:', e.message);
             }
-            if (e instanceof CustomError) {
+            if (e instanceof CustomError || e?.code) {
               ctx.code = e.code;
               ctx.message = e.message;
               ctx.body = null;
