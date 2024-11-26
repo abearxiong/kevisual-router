@@ -82,9 +82,12 @@ export class App<T = {}> {
     }
     return new Route(path, key, opts);
   }
-  async call(message: { path: string; key: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
+  async call(message: { path: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
     const router = this.router;
     return await router.call(message, ctx);
+  }
+  async queryRoute(path: string, key?: string, payload?: any, ctx?: RouteContext & { [key: string]: any }) {
+    return await this.router.queryRoute({ path, key, payload }, ctx);
   }
   exportRoutes() {
     return this.router.exportRoutes();

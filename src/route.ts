@@ -30,7 +30,10 @@ export type RouteContext<T = { code?: number }, S = any> = {
   // TODO:
   queryRouter?: QueryRouter;
   error?: any;
-  call?: (message: { path: string; key: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) => Promise<any>;
+  /** 请求 route的返回结果，包函ctx */
+  call?: (message: { path: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) => Promise<any>;
+  /** 请求 route的返回结果，不包函ctx */
+  queryRoute?: (message: { path: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) => Promise<any>;
   index?: number;
   throw?: (code?: number | string, message?: string, tips?: string) => void;
 } & T;
@@ -477,11 +480,32 @@ export class QueryRouter {
     // TODO: 是否需要queryRouter，函数内部处理router路由执行，这应该是避免去内部去包含的功能过
     ctx.queryRouter = this;
     ctx.call = this.call.bind(this);
+    ctx.queryRoute = this.queryRoute.bind(this);
     ctx.index = 0;
     return await this.runRoute(path, key, ctx);
   }
-  async call(message: { path: string; key: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
+  /**
+   * 返回的数据包含所有的context的请求返回的内容，可做其他处理
+   * @param message
+   * @param ctx
+   * @returns
+   */
+  async call(message: { path: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
     return await this.parse(message, { ...this.context, ...ctx });
+  }
+  /**
+   * 请求 result 的数据
+   * @param message
+   * @param ctx
+   * @returns
+   */
+  async queryRoute(message: { path: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
+    const res = await this.parse(message, { ...this.context, ...ctx });
+    return {
+      code: res.code,
+      data: res.body,
+      message: res.message,
+    };
   }
   async setContext(ctx: RouteContext) {
     this.context = ctx;
@@ -574,10 +598,13 @@ export class QueryRouterServer extends QueryRouter {
     }
     return new Route(path, key, opts);
   }
-  async call(message: { path: string; key: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
-    return await this.parse(message, ctx);
-  }
-  async run({ path, key, payload }: { path: string; key: string; payload?: any }) {
+
+  /**
+   * 等于queryRoute，但是调用了handle
+   * @param param0
+   * @returns
+   */
+  async run({ path, key, payload }: { path: string; key?: string; payload?: any }) {
     const handle = this.handle;
     const resultError = (error: string, code = 500) => {
       const r = {
