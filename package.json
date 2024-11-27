@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/package",
   "name": "@kevisual/router",
-  "version": "0.0.6-alpha-1",
+  "version": "0.0.6-alpha-2",
   "description": "",
   "main": "dist/index.js",
   "module": "dist/index.js",

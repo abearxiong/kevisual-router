@@ -1,5 +1,6 @@
 import http, { IncomingMessage, ServerResponse } from 'http';
 import https from 'https';
+import http2 from 'http2';
 import { handleServer } from './handle-server.ts';
 export type Listener = (...args: any[]) => void;
 
@@ -15,7 +16,7 @@ export type ServerOpts = {
   /**handle Fn */
   handle?: (msg?: { path: string; key?: string; [key: string]: any }) => any;
   cors?: Cors;
-  isHTTPS?: boolean;
+  httpType?: 'http' | 'https' | 'http2';
   httpsKey?: string;
   httpsCert?: string;
 };
@@ -29,12 +30,12 @@ export const resultError = (error: string, code = 500) => {
 
 export class Server {
   path = '/api/router';
-  private _server: http.Server;
+  private _server: http.Server | https.Server | http2.Http2SecureServer;
   public handle: ServerOpts['handle'];
   private _callback: any;
   private cors: Cors;
   private hasOn = false;
-  private isHTTPS = false;
+  private httpType = 'http';
   private options = {
     key: '',
     cert: '',
@@ -43,7 +44,7 @@ export class Server {
     this.path = opts?.path || '/api/router';
     this.handle = opts?.handle;
     this.cors = opts?.cors;
-    this.isHTTPS = opts?.isHTTPS || false;
+    this.httpType = opts?.httpType || 'http';
     this.options = {
       key: opts?.httpsKey || '',
       cert: opts?.httpsCert || '',
@@ -64,14 +65,25 @@ export class Server {
     this._server.listen(...args);
   }
   createServer() {
-    let server: http.Server | https.Server;
-    if (this.isHTTPS) {
+    let server: http.Server | https.Server | http2.Http2SecureServer;
+    const httpType = this.httpType;
+    if (httpType === 'https') {
       if (this.options.key && this.options.cert) {
         server = https.createServer({
           key: this.options.key,
           cert: this.options.cert,
         });
-        console.log('https server');
+        return server;
+      } else {
+        console.error('https key and cert is required');
+        console.log('downgrade to http');
+      }
+    } else if (httpType === 'http2') {
+      if (this.options.key && this.options.cert) {
+        server = http2.createSecureServer({
+          key: this.options.key,
+          cert: this.options.cert,
+        });
         return server;
       } else {
         console.error('https key and cert is required');
@@ -93,6 +105,7 @@ export class Server {
     const handle = this.handle;
     const cors = this.cors;
     const _callback = async (req: IncomingMessage, res: ServerResponse) => {
+      // only handle /api/router
       if (req.url === '/favicon.ico') {
         return;
       }
@@ -118,7 +131,7 @@ export class Server {
           return;
         }
       }
-      res.writeHead(200); // 设置响应头，给予其他api知道headersSent，它已经被响应了
+      res.writeHead(200); // 设置响应头，给予其他任何listen 知道headersSent，它已经被响应了
 
       const url = req.url;
       if (!url.startsWith(path)) {

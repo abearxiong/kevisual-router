@@ -1,5 +1,5 @@
 import { QueryRouter, Route, RouteContext, RouteOpts } from './route.ts';
-import { Server, Cors } from './server/server.ts';
+import { Server, Cors, ServerOpts } from './server/server.ts';
 import { WsServer } from './server/ws-server.ts';
 import { CustomError } from './result/error.ts';
 
@@ -10,14 +10,7 @@ type AppOptions<T = {}> = {
   /** handle msg 关联 */
   routerHandle?: RouterHandle;
   routerContext?: RouteContext<T>;
-  serverOptions?: {
-    path?: string;
-    cors?: Cors;
-    handle?: any;
-    isHTTPS?: boolean;
-    httpsKey?: string;
-    httpsCert?: string;
-  };
+  serverOptions?: ServerOpts;
   io?: boolean;
   ioOpts?: { routerHandle?: RouterHandle; routerContext?: RouteContext<T>; path?: string };
 };

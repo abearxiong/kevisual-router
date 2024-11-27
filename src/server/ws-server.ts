@@ -4,7 +4,7 @@ import { parseIfJson } from '../utils/parse.ts';
 
 export const createWsServer = (server: Server) => {
   // 将 WebSocket 服务器附加到 HTTP 服务器
-  const wss = new WebSocketServer({ server: server.server });
+  const wss = new WebSocketServer({ server: server.server as any });
   return wss;
 };
 type WsServerBaseOpts = {
