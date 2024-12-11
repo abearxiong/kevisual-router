@@ -2,8 +2,46 @@ import http, { IncomingMessage, ServerResponse } from 'http';
 import https from 'https';
 import http2 from 'http2';
 import { handleServer } from './handle-server.ts';
+import * as cookie from 'cookie';
 export type Listener = (...args: any[]) => void;
 
+type CookieFn = (name: string, value: string, options?: cookie.SerializeOptions, end?: boolean) => void;
+
+export type HandleCtx = {
+  req: IncomingMessage & { cookies: Record<string, string> };
+  res: ServerResponse & {
+    /**
+     * cookie 函数， end 参数用于设置是否立即设置到响应头，设置了后面的cookie再设置会覆盖前面的
+     */
+    cookie: CookieFn; //
+  };
+};
+// 实现函数
+export function createHandleCtx(req: IncomingMessage, res: ServerResponse): HandleCtx {
+  // 用于存储所有的 Set-Cookie 字符串
+  const cookies: string[] = [];
+  let handReq = req as HandleCtx['req'];
+  let handRes = res as HandleCtx['res'];
+  // 扩展 res.cookie 方法
+  const cookieFn: CookieFn = (name, value, options = {}, end = true) => {
+    // 序列化新的 Cookie
+    const serializedCookie = cookie.serialize(name, value, options);
+    cookies.push(serializedCookie); // 将新的 Cookie 添加到数组
+    if (end) {
+      // 如果设置了 end 参数，则立即设置到响应头
+      res.setHeader('Set-Cookie', cookies);
+    }
+  };
+  // 解析请求中的现有 Cookie
+  const parsedCookies = cookie.parse(req.headers.cookie || '');
+  handReq.cookies = parsedCookies;
+  handRes.cookie = cookieFn;
+  // 返回扩展的上下文
+  return {
+    req: handReq,
+    res: handRes,
+  };
+}
 export type Cors = {
   /**
    * @default '*''
@@ -14,7 +52,7 @@ export type ServerOpts = {
   /**path default `/api/router` */
   path?: string;
   /**handle Fn */
-  handle?: (msg?: { path: string; key?: string; [key: string]: any }) => any;
+  handle?: (msg?: { path: string; key?: string; [key: string]: any }, ctx?: { req: http.IncomingMessage; res: http.ServerResponse }) => any;
   cors?: Cors;
   httpType?: 'http' | 'https' | 'http2';
   httpsKey?: string;
@@ -131,7 +169,7 @@ export class Server {
           return;
         }
       }
-      res.writeHead(200); // 设置响应头，给予其他任何listen 知道headersSent，它已经被响应了
+      // res.writeHead(200); // 设置响应头，给予其他任何listen 知道headersSent，它已经被响应了
 
       const url = req.url;
       if (!url.startsWith(path)) {
@@ -144,7 +182,10 @@ export class Server {
         return;
       }
       try {
-        const end = await handle(messages as any);
+        const end = await handle(messages as any, { req, res });
+        if (res.writableEnded) {
+          return;
+        }
         if (typeof end === 'string') {
           res.end(end);
         } else {

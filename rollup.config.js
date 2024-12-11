@@ -16,7 +16,7 @@ export default [
     },
     plugins: [
       resolve(), // 使用 @rollup/plugin-node-resolve 解析 node_modules 中的模块
-      // commonjs(),
+      commonjs(),
       typescript(), // 使用 @rollup/plugin-typescript 处理 TypeScript 文件
     ],
     external: ['ws'],

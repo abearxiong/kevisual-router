@@ -1,5 +1,5 @@
 import { QueryRouter, Route, RouteContext, RouteOpts } from './route.ts';
-import { Server, Cors, ServerOpts } from './server/server.ts';
+import { Server, Cors, ServerOpts, HandleCtx } from './server/server.ts';
 import { WsServer } from './server/ws-server.ts';
 import { CustomError } from './result/error.ts';
 
@@ -14,7 +14,12 @@ type AppOptions<T = {}> = {
   io?: boolean;
   ioOpts?: { routerHandle?: RouterHandle; routerContext?: RouteContext<T>; path?: string };
 };
-export class App<T = {}> {
+export type AppReqRes = HandleCtx;
+
+/**
+ *  封装了 Router 和 Server 的 App 模块，处理http的请求和响应，内置了 Cookie 和 Token 和 res 的处理
+ */
+export class App<T = {}, U = AppReqRes> {
   router: QueryRouter;
   server: Server;
   io: WsServer;
@@ -55,7 +60,7 @@ export class App<T = {}> {
   add = this.addRoute;
 
   Route = Route;
-  route(opts: RouteOpts): Route;
+  route(opts: RouteOpts): Route<U>;
   route(path: string, key?: string): Route;
   route(path: string, opts?: RouteOpts): Route;
   route(path: string, key?: string, opts?: RouteOpts): Route;

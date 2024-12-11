@@ -1,6 +1,7 @@
 import http, { IncomingMessage, Server, ServerResponse } from 'http';
 import { parseBody } from './parse-body.ts';
 import url from 'url';
+import { createHandleCtx } from './server.ts';
 
 /**
  * get params and body
@@ -20,9 +21,16 @@ export const handleServer = async (req: IncomingMessage, res: ServerResponse) =>
   const parsedUrl = url.parse(req.url, true);
   // 获取token
   let token = req.headers['authorization'] || '';
+  const handle = createHandleCtx(req, res);
+  const cookies = handle.req.cookies;
+  if (!token) {
+    token = cookies.token;
+  }
   if (token) {
     token = token.replace('Bearer ', '');
   }
+  //@ts-ignore
+  console.log('token', req.cookies, res.cookie);
   // 获取查询参数
   const param = parsedUrl.query;
   let body: Record<any, any>;
@@ -41,6 +49,7 @@ export const handleServer = async (req: IncomingMessage, res: ServerResponse) =>
     token,
     ...param,
     ...body,
+    cookies,
   };
   return data;
 };

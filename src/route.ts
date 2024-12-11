@@ -69,7 +69,7 @@ export type RouteOpts = {
 export type DefineRouteOpts = Omit<RouteOpts, 'idUsePath' | 'verify' | 'verifyKey' | 'nextRoute'>;
 const pickValue = ['path', 'key', 'id', 'description', 'type', 'validator', 'middleware'] as const;
 export type RouteInfo = Pick<Route, (typeof pickValue)[number]>;
-export class Route {
+export class Route<U = { [key: string]: any }> {
   path?: string;
   key?: string;
   id?: string;
@@ -207,9 +207,9 @@ export class Route {
     return this;
   }
   define<T extends { [key: string]: any } = RouterContextT>(opts: DefineRouteOpts): this;
-  define<T extends { [key: string]: any } = RouterContextT>(fn: Run<T>): this;
-  define<T extends { [key: string]: any } = RouterContextT>(key: string, fn: Run<T>): this;
-  define<T extends { [key: string]: any } = RouterContextT>(path: string, key: string, fn: Run<T>): this;
+  define<T extends { [key: string]: any } = RouterContextT>(fn: Run<T & U>): this;
+  define<T extends { [key: string]: any } = RouterContextT>(key: string, fn: Run<T & U>): this;
+  define<T extends { [key: string]: any } = RouterContextT>(path: string, key: string, fn: Run<T & U>): this;
   define(...args: any[]) {
     const [path, key, opts] = args;
     // 全覆盖，所以opts需要准确，不能由idUsePath 需要check的变量
@@ -516,15 +516,19 @@ export class QueryRouter {
     });
   }
   getHandle<T = any>(router: QueryRouter, wrapperFn?: HandleFn<T>, ctx?: RouteContext) {
-    return async (msg: { path: string; key?: string; [key: string]: any }) => {
-      const context = { ...ctx };
-      const res = await router.parse(msg, context);
-      if (wrapperFn) {
-        res.data = res.body;
-        return wrapperFn(res, context);
+    return async (msg: { path: string; key?: string; [key: string]: any }, handleContext?: RouteContext) => {
+      try {
+        const context = { ...ctx, ...handleContext };
+        const res = await router.parse(msg, context);
+        if (wrapperFn) {
+          res.data = res.body;
+          return wrapperFn(res, context);
+        }
+        const { code, body, message } = res;
+        return { code, data: body, message };
+      } catch (e) {
+        return { code: 500, message: e.message };
       }
-      const { code, body, message } = res;
-      return { code, data: body, message };
     };
   }
   exportRoutes() {
