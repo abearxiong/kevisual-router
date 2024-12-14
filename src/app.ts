@@ -61,9 +61,9 @@ export class App<T = {}, U = AppReqRes> {
 
   Route = Route;
   route(opts: RouteOpts): Route<U>;
-  route(path: string, key?: string): Route;
-  route(path: string, opts?: RouteOpts): Route;
-  route(path: string, key?: string, opts?: RouteOpts): Route;
+  route(path: string, key?: string): Route<U>;
+  route(path: string, opts?: RouteOpts): Route<U>;
+  route(path: string, key?: string, opts?: RouteOpts): Route<U>;
   route(...args: any[]) {
     const [path, key, opts] = args;
     if (typeof path === 'object') {

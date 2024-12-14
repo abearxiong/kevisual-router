@@ -582,10 +582,10 @@ export class QueryRouterServer extends QueryRouter {
   }
 
   Route = Route;
-  route(opts: RouteOpts): Route;
-  route(path: string, key?: string): Route;
-  route(path: string, opts?: RouteOpts): Route;
-  route(path: string, key?: string, opts?: RouteOpts): Route;
+  route(opts: RouteOpts): Route<Required<RouteContext>>;
+  route(path: string, key?: string): Route<Required<RouteContext>>;
+  route(path: string, opts?: RouteOpts): Route<Required<RouteContext>>;
+  route(path: string, key?: string, opts?: RouteOpts): Route<Required<RouteContext>>;
   route(...args: any[]) {
     const [path, key, opts] = args;
     if (typeof path === 'object') {
