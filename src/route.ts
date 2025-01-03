@@ -274,7 +274,7 @@ export class QueryRouter {
     const has = this.routes.find((r) => r.path === route.path && r.key === route.key);
     if (has) {
       // remove the old route
-      this.routes = this.routes.filter((r) => r.path === route.path && r.key === route.key);
+      this.routes = this.routes.filter((r) => r.id !== has.id);
     }
     this.routes.push(route);
   }
