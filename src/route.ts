@@ -63,6 +63,9 @@ export type RouteOpts = {
   isVerify?: boolean;
   verify?: (ctx?: RouteContext, dev?: boolean) => boolean;
   verifyKey?: (key: string, ctx?: RouteContext, dev?: boolean) => boolean;
+  /**
+   * $#$ will be used to split path and key
+   */
   idUsePath?: boolean;
   isDebug?: boolean;
 };
@@ -282,8 +285,8 @@ export class QueryRouter {
    * remove route by path and key
    * @param route
    */
-  remove(route: Route | { path: string; key: string }) {
-    this.routes = this.routes.filter((r) => r.path === route.path && r.key === route.key);
+  remove(route: Route | { path: string; key?: string }) {
+    this.routes = this.routes.filter((r) => r.path === route.path && r.key == route.key);
   }
   /**
    * remove route by id
@@ -547,6 +550,9 @@ export class QueryRouter {
   throw(code?: number | string, message?: string, tips?: string): void;
   throw(...args: any[]) {
     throw new CustomError(...args);
+  }
+  hasRoute(path: string, key?: string) {
+    return this.routes.find((r) => r.path === path && r.key === key);
   }
 }
 
