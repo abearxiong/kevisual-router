@@ -1,4 +1,5 @@
 import * as http from 'http';
+import url from 'url';
 
 export const parseBody = async (req: http.IncomingMessage) => {
   return new Promise((resolve, reject) => {
@@ -16,3 +17,8 @@ export const parseBody = async (req: http.IncomingMessage) => {
     });
   });
 };
+
+export const parseSearch = (req: http.IncomingMessage) => {
+  const parsedUrl = url.parse(req.url, true);
+  return parsedUrl.query;
+}

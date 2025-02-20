@@ -29,8 +29,6 @@ export const handleServer = async (req: IncomingMessage, res: ServerResponse) =>
   if (token) {
     token = token.replace('Bearer ', '');
   }
-  //@ts-ignore
-  console.log('token', req.cookies, res.cookie);
   // 获取查询参数
   const param = parsedUrl.query;
   let body: Record<any, any>;

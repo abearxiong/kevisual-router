@@ -1,5 +1,6 @@
 import { pathToRegexp, match, Key } from 'path-to-regexp';
 import type { IncomingMessage, ServerResponse } from 'http';
+import { parseBody, parseSearch } from './server/parse-body.ts';
 
 type Req = IncomingMessage & { params?: Record<string, string> };
 interface Route {
@@ -17,7 +18,12 @@ export class SimpleRouter {
   constructor() {
     // console.log('AppSimple initialized');
   }
-
+  getBody(req: Req) {
+    return parseBody(req);
+  }
+  getSearch(req: Req) {
+    return parseSearch(req);
+  }
   use(method: string, route: string, ...fns: Array<(req: Req, res: ServerResponse) => Promise<void> | void>) {
     const handlers = Array.isArray(fns) ? fns.flat() : [];
     const pattern = pathToRegexp(route);
@@ -31,6 +37,17 @@ export class SimpleRouter {
   post(route: string, ...fns: Array<(req: Req, res: ServerResponse) => Promise<void> | void>) {
     return this.use('post', route, ...fns);
   }
+  all(route: string, ...fns: Array<(req: Req, res: ServerResponse) => Promise<void> | void>) {
+    this.use('post', route, ...fns);
+    this.use('get', route, ...fns);
+    return this;
+  }
+  /**
+   * 解析 req 和 res 请求
+   * @param req 
+   * @param res 
+   * @returns 
+   */
   parse(req: Req, res: ServerResponse) {
     const { pathname } = new URL(req.url, 'http://localhost');
     const method = req.method.toLowerCase();
