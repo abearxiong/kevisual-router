@@ -472,7 +472,7 @@ export class QueryRouter {
             ctx.body = null;
             return ctx;
           }
-          ctx.query = ctx.nextQuery;
+          ctx.query = { ...ctx.query, ...ctx.nextQuery };
           ctx.nextQuery = {};
           return await this.runRoute(path, key, ctx);
         }
@@ -497,7 +497,7 @@ export class QueryRouter {
    */
   async parse(message: { path: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
     if (!message?.path) {
-      return Promise.resolve({ code: 404, body: 'Not found path' });
+      return Promise.resolve({ code: 404, body: null, message: 'Not found path' });
     }
     const { path, key = '', payload = {}, ...query } = message;
     ctx = ctx || {};

@@ -24,7 +24,7 @@ export const handleServer = async (req: IncomingMessage, res: ServerResponse) =>
   const handle = createHandleCtx(req, res);
   const cookies = handle.req.cookies;
   if (!token) {
-    token = cookies.token;
+    token = cookies.token; // cookie优先
   }
   if (token) {
     token = token.replace('Bearer ', '');
