@@ -3,7 +3,7 @@ import { readFileSync } from 'fs';
 const app = new App({ 
   serverOptions: {
     cors: {},
-    isHTTPS: true,
+    httpType: 'https',
     httpsKey: readFileSync('https-key.pem', 'utf8'),
     httpsCert: readFileSync('https-cert.pem', 'utf-8'),
   },

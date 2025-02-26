@@ -48,6 +48,7 @@ export type RouteOpts = {
   run?: Run;
   nextRoute?: NextRoute; // route to run after this route
   description?: string;
+  metadata?: { [key: string]: any };
   middleware?: Route[] | string[]; // middleware
   type?: 'route' | 'middleware';
   /**
@@ -73,19 +74,32 @@ export type DefineRouteOpts = Omit<RouteOpts, 'idUsePath' | 'verify' | 'verifyKe
 const pickValue = ['path', 'key', 'id', 'description', 'type', 'validator', 'middleware'] as const;
 export type RouteInfo = Pick<Route, (typeof pickValue)[number]>;
 export class Route<U = { [key: string]: any }> {
+  /**
+   * 一级路径
+   */
   path?: string;
+  /**
+   * 二级路径
+   */
   key?: string;
   id?: string;
   share? = false;
   run?: Run;
   nextRoute?: NextRoute; // route to run after this route
   description?: string;
+  metadata?: { [key: string]: any };
   middleware?: (Route | string)[]; // middleware
   type? = 'route';
   private _validator?: { [key: string]: Rule };
   schema?: { [key: string]: Schema<any> };
   data?: any;
+  /**
+   * 是否需要验证
+   */
   isVerify?: boolean;
+  /**
+   * 是否开启debug，开启后会打印错误信息
+   */
   isDebug?: boolean;
   constructor(path: string, key: string = '', opts?: RouteOpts) {
     path = path.trim();
@@ -100,6 +114,7 @@ export class Route<U = { [key: string]: any }> {
       this.run = opts.run;
       this.nextRoute = opts.nextRoute;
       this.description = opts.description;
+      this.metadata = opts.metadata;
       this.type = opts.type || 'route';
       this.validator = opts.validator;
       this.middleware = opts.middleware || [];
@@ -218,7 +233,7 @@ export class Route<U = { [key: string]: any }> {
     // 全覆盖，所以opts需要准确，不能由idUsePath 需要check的变量
     const setOpts = (opts: DefineRouteOpts) => {
       const keys = Object.keys(opts);
-      const checkList = ['path', 'key', 'run', 'nextRoute', 'description', 'middleware', 'type', 'validator', 'isVerify', 'isDebug'];
+      const checkList = ['path', 'key', 'run', 'nextRoute', 'description', 'metadata', 'middleware', 'type', 'validator', 'isVerify', 'isDebug'];
       for (let item of keys) {
         if (!checkList.includes(item)) {
           continue;
@@ -319,28 +334,38 @@ export class QueryRouter {
     // run middleware
     if (route && route.middleware && route.middleware.length > 0) {
       const errorMiddleware: { path?: string; key?: string; id?: string }[] = [];
-      //  TODO: 向上递归执行动作, 暂时不考虑
-      const routeMiddleware = route.middleware.map((m) => {
-        let route: Route | undefined;
-        const isString = typeof m === 'string';
-        if (typeof m === 'string') {
-          route = this.routes.find((r) => r.id === m);
-        } else {
-          route = this.routes.find((r) => r.path === m.path && r.key === m.key);
-        }
-        if (!route) {
+      const getMiddleware = (m: Route) => {
+        if (!m.middleware || m.middleware.length === 0) return [];
+        const routeMiddleware: Route[] = [];
+        for (let i = 0; i < m.middleware.length; i++) {
+          const item = m.middleware[i];
+          let route: Route | undefined;
+          const isString = typeof item === 'string';
           if (isString) {
-            errorMiddleware.push({
-              id: m as string,
-            });
-          } else
-            errorMiddleware.push({
-              path: m?.path,
-              key: m?.key,
-            });
+            route = this.routes.find((r) => r.id === item);
+          } else {
+            route = this.routes.find((r) => r.path === item.path && r.key === item.key);
+          }
+          if (!route) {
+            if (isString) {
+              errorMiddleware.push({
+                id: item as string,
+              });
+            } else
+              errorMiddleware.push({
+                path: m?.path,
+                key: m?.key,
+              });
+          }
+          const routeMiddlewarePrevious = getMiddleware(route);
+          if (routeMiddlewarePrevious.length > 0) {
+            routeMiddleware.push(...routeMiddlewarePrevious);
+          }
+          routeMiddleware.push(route);
         }
-        return route;
-      });
+        return routeMiddleware;
+      };
+      const routeMiddleware = getMiddleware(route);
       if (errorMiddleware.length > 0) {
         console.error('middleware not found');
         ctx.body = errorMiddleware;
