@@ -31,7 +31,10 @@ export type RouteContext<T = { code?: number }, S = any> = {
   queryRouter?: QueryRouter;
   error?: any;
   /** 请求 route的返回结果，包函ctx */
-  call?: (message: { path: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) => Promise<any>;
+  call?: (
+    message: { path: string; key?: string; payload?: any; [key: string]: any } | { id: string; apyload?: any; [key: string]: any },
+    ctx?: RouteContext & { [key: string]: any },
+  ) => Promise<any>;
   /** 请求 route的返回结果，不包函ctx */
   queryRoute?: (message: { path: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) => Promise<any>;
   index?: number;
@@ -130,15 +133,19 @@ export class Route<U = { [key: string]: any }> {
     this.isDebug = opts?.isDebug ?? false;
   }
   private createSchema() {
-    const validator = this.validator;
-    const keys = Object.keys(validator || {});
-    const schemaList = keys.map((key) => {
-      return { [key]: createSchema(validator[key]) };
-    });
-    const schema = schemaList.reduce((prev, current) => {
-      return { ...prev, ...current };
-    }, {});
-    this.schema = schema;
+    try {
+      const validator = this.validator;
+      const keys = Object.keys(validator || {});
+      const schemaList = keys.map((key) => {
+        return { [key]: createSchema(validator[key]) };
+      });
+      const schema = schemaList.reduce((prev, current) => {
+        return { ...prev, ...current };
+      }, {});
+      this.schema = schema;
+    } catch (e) {
+      console.error('createSchema error:', e);
+    }
   }
 
   /**
@@ -518,9 +525,24 @@ export class QueryRouter {
    * @param ctx
    * @returns
    */
-  async call(message: { path: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
-    return await this.parse(message, { ...this.context, ...ctx });
+  async call(message: { id?: string; path?: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
+    let path = message.path;
+    let key = message.key;
+    if (message.id) {
+      const route = this.routes.find((r) => r.id === message.id);
+      if (route) {
+        path = route.path;
+        key = route.key;
+      } else {
+        return { code: 404, body: null, message: 'Not found route' };
+      }
+    } else if (path) {
+      return await this.parse({ ...message, path }, { ...this.context, ...ctx });
+    } else {
+      return { code: 404, body: null, message: 'Not found path' };
+    }
   }
+
   /**
    * 请求 result 的数据
    * @param message

@@ -68,9 +68,12 @@ export const schemaFormRule = (rule: Rule): z.ZodType<any, any, any> => {
 };
 export const createSchema = (rule: Rule): Schema => {
   try {
-    rule.required = rule.required || false;
+    rule.required = rule.required ?? false;
     if (!rule.required) {
-      return schemaFormRule(rule).nullable();
+      // nullable is null
+      // nullish is null or undefined
+      // optional is undefined
+      return schemaFormRule(rule).optional();
     }
     return schemaFormRule(rule);
   } catch (e) {
