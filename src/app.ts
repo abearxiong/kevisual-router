@@ -27,7 +27,7 @@ export class App<T = {}, U = AppReqRes> {
     const router = opts?.router || new QueryRouter();
     const server = opts?.server || new Server(opts?.serverOptions || {});
     server.setHandle(router.getHandle(router, opts?.routerHandle, opts?.routerContext));
-    router.setContext(opts?.routerContext);
+    router.setContext({ needSerialize: true, ...opts?.routerContext });
     this.router = router;
     this.server = server;
     if (opts?.io) {

@@ -38,9 +38,9 @@ export type RouteContext<T = { code?: number }, S = any> = {
   /** 请求 route的返回结果，不包函ctx */
   queryRoute?: (message: { path: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) => Promise<any>;
   index?: number;
+  throw?: (code?: number | string, message?: string, tips?: string) => void;
   /** 是否需要序列化 */
   needSerialize?: boolean;
-  throw?: (code?: number | string, message?: string, tips?: string) => void;
 } & T;
 
 export type Run<T = any> = (ctx: RouteContext<T>) => Promise<typeof ctx | null | void>;
@@ -74,10 +74,6 @@ export type RouteOpts = {
    */
   idUsePath?: boolean;
   isDebug?: boolean;
-  /**
-   * 是否需要序列化
-   */
-  needSerialize?: boolean;
 };
 export type DefineRouteOpts = Omit<RouteOpts, 'idUsePath' | 'verify' | 'verifyKey' | 'nextRoute'>;
 const pickValue = ['path', 'key', 'id', 'description', 'type', 'validator', 'middleware'] as const;
@@ -110,16 +106,11 @@ export class Route<U = { [key: string]: any }> {
    * 是否开启debug，开启后会打印错误信息
    */
   isDebug?: boolean;
-  /**
-   * 是否需要序列化
-   */
-  needSerialize?: boolean;
   constructor(path: string, key: string = '', opts?: RouteOpts) {
     path = path.trim();
     key = key.trim();
     this.path = path;
     this.key = key;
-    this.needSerialize = opts?.needSerialize ?? true;
     if (opts) {
       this.id = opts.id || nanoid();
       if (!opts.id && opts.idUsePath) {
@@ -494,14 +485,6 @@ export class QueryRouter {
           ctx.nextQuery = {};
           return await this.runRoute(path, key, ctx);
         }
-        try {
-          if (route.needSerialize) {
-            // clear body
-            ctx.body = JSON.parse(JSON.stringify(ctx.body || ''));
-          }
-        } catch (e) {
-          console.log('serialize error', e);
-        }
         if (!ctx.code) ctx.code = 200;
         return ctx;
       } else {
@@ -534,7 +517,12 @@ export class QueryRouter {
     ctx.call = this.call.bind(this);
     ctx.queryRoute = this.queryRoute.bind(this);
     ctx.index = 0;
-    return await this.runRoute(path, key, ctx);
+    const res = await this.runRoute(path, key, ctx);
+    const serialize = ctx.needSerialize ?? true; // 是否需要序列化
+    if (serialize) {
+      res.body = JSON.parse(JSON.stringify(res.body || ''));
+    }
+    return res;
   }
   /**
    * 返回的数据包含所有的context的请求返回的内容，可做其他处理
@@ -637,7 +625,7 @@ export class QueryRouterServer extends QueryRouter {
   constructor(opts?: QueryRouterServerOpts) {
     super();
     this.handle = this.getHandle(this, opts?.handleFn, opts?.context);
-    this.setContext(opts?.context);
+    this.setContext({ needSerialize: false, ...opts?.context });
   }
   setHandle(wrapperFn?: HandleFn, ctx?: RouteContext) {
     this.handle = this.getHandle(this, wrapperFn, ctx);
