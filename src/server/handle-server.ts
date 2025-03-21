@@ -5,6 +5,10 @@ import { createHandleCtx } from './server.ts';
 
 /**
  * get params and body
+ * 优先原则
+ * 1. 请求参数中的 payload 的token 优先
+ * 2. 请求头中的 authorization 优先
+ * 3. 请求头中的 cookie 优先
  * @param req
  * @param res
  * @returns
