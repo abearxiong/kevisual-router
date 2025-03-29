@@ -1,4 +1,4 @@
-import { pathToRegexp, match, Key } from 'path-to-regexp';
+import { pathToRegexp, Key } from 'path-to-regexp';
 import type { IncomingMessage, ServerResponse } from 'http';
 import { parseBody, parseSearch } from './server/parse-body.ts';
 
@@ -14,12 +14,12 @@ interface Route {
  */
 export class SimpleRouter {
   routes: Route[] = [];
-
-  constructor() {
-    // console.log('AppSimple initialized');
+  exclude: string[] = []; // 排除的请求
+  constructor(opts?: { exclude?: string[] }) {
+    this.exclude = opts?.exclude || ['/api/router'];
   }
   getBody(req: Req) {
-    return parseBody(req);
+    return parseBody<Record<string, any>>(req);
   }
   getSearch(req: Req) {
     return parseSearch(req);
@@ -44,14 +44,16 @@ export class SimpleRouter {
   }
   /**
    * 解析 req 和 res 请求
-   * @param req 
-   * @param res 
-   * @returns 
+   * @param req
+   * @param res
+   * @returns
    */
   parse(req: Req, res: ServerResponse) {
     const { pathname } = new URL(req.url, 'http://localhost');
     const method = req.method.toLowerCase();
-
+    if (this.exclude.includes(pathname)) {
+      return 'is_exclude';
+    }
     const route = this.routes.find((route) => {
       const matchResult = route.regexp.exec(pathname);
       if (matchResult && route.method === method) {

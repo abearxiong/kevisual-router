@@ -147,7 +147,6 @@ export class Server {
       if (req.url === '/favicon.ico') {
         return;
       }
-
       if (res.headersSent) {
         // 程序已经在其他地方响应了
         return;
@@ -158,8 +157,6 @@ export class Server {
         // 交给其他监听处理
         return;
       }
-      // res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Content-Type', 'application/json; charset=utf-8');
       if (cors) {
         res.setHeader('Access-Control-Allow-Origin', cors?.origin || '*'); // 允许所有域名的请求访问，可以根据需要设置具体的域名
         res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
@@ -169,8 +166,6 @@ export class Server {
           return;
         }
       }
-      // res.writeHead(200); // 设置响应头，给予其他任何listen 知道headersSent，它已经被响应了
-
       const url = req.url;
       if (!url.startsWith(path)) {
         res.end(resultError(`not path:[${path}]`));
@@ -184,8 +179,10 @@ export class Server {
       try {
         const end = await handle(messages as any, { req, res });
         if (res.writableEnded) {
+          // 如果响应已经结束，则不进行任何操作
           return;
         }
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
         if (typeof end === 'string') {
           res.end(end);
         } else {
@@ -193,6 +190,7 @@ export class Server {
         }
       } catch (e) {
         console.error(e);
+        res.setHeader('Content-Type', 'application/json; charset=utf-8');
         if (e.code && typeof e.code === 'number') {
           res.end(resultError(e.message || `Router Server error`, e.code));
         } else {
