@@ -18,16 +18,31 @@ export type RouteContext<T = { code?: number }, S = any> = {
   // 传递状态
   state?: S;
   // transfer data
+  /**
+   * 当前路径
+   */
   currentPath?: string;
+  /**
+   * 当前key
+   */
   currentKey?: string;
+  /**
+   * 当前route
+   */
   currentRoute?: Route;
-  progress?: [[string, string]][];
+  /**
+   * 进度
+   */
+  progress?: [string, string][];
   // onlyForNextRoute will be clear after next route
   nextQuery?: { [key: string]: any };
   // end
   end?: boolean;
   // 处理router manager
   // TODO:
+  /**
+   * 请求 route的返回结果，包函ctx
+   */
   queryRouter?: QueryRouter;
   error?: any;
   /** 请求 route的返回结果，包函ctx */
@@ -334,6 +349,12 @@ export class QueryRouter {
     ctx.currentKey = key;
     ctx.currentRoute = route;
     ctx.index = (ctx.index || 0) + 1;
+    const progress = [path, key] as [string, string];
+    if (ctx.progress) {
+      ctx.progress.push(progress);
+    } else {
+      ctx.progress = [progress];
+    }
     if (ctx.index > maxNextRoute) {
       ctx.code = 500;
       ctx.message = 'Too many nextRoute';
@@ -509,7 +530,7 @@ export class QueryRouter {
     const { path, key = '', payload = {}, ...query } = message;
     ctx = ctx || {};
     ctx.query = { ...ctx.query, ...query, ...payload };
-    ctx.state = {};
+    ctx.state = { ...ctx?.state };
     ctx.throw = this.throw;
     // put queryRouter to ctx
     // TODO: 是否需要queryRouter，函数内部处理router路由执行，这应该是避免去内部去包含的功能过
@@ -517,6 +538,7 @@ export class QueryRouter {
     ctx.call = this.call.bind(this);
     ctx.queryRoute = this.queryRoute.bind(this);
     ctx.index = 0;
+    ctx.progress = ctx.progress || [];
     const res = await this.runRoute(path, key, ctx);
     const serialize = ctx.needSerialize ?? true; // 是否需要序列化
     if (serialize) {

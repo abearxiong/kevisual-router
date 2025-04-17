@@ -1,7 +1,7 @@
-import * as http from 'http';
-import url from 'url';
+import type { IncomingMessage } from 'node:http';
+import url from 'node:url';
 
-export const parseBody = async <T = Record<string, any>>(req: http.IncomingMessage) => {
+export const parseBody = async <T = Record<string, any>>(req: IncomingMessage) => {
   return new Promise<T>((resolve, reject) => {
     const arr: any[] = [];
     req.on('data', (chunk) => {
@@ -18,7 +18,7 @@ export const parseBody = async <T = Record<string, any>>(req: http.IncomingMessa
   });
 };
 
-export const parseSearch = (req: http.IncomingMessage) => {
+export const parseSearch = (req: IncomingMessage) => {
   const parsedUrl = url.parse(req.url, true);
   return parsedUrl.query;
 };

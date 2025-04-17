@@ -1,6 +1,6 @@
-import http, { IncomingMessage, Server, ServerResponse } from 'http';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { parseBody } from './parse-body.ts';
-import url from 'url';
+import url from 'node:url';
 import { createHandleCtx } from './server.ts';
 
 /**

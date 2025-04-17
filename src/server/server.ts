@@ -1,6 +1,7 @@
-import http, { IncomingMessage, ServerResponse } from 'http';
-import https from 'https';
-import http2 from 'http2';
+import type { IncomingMessage, ServerResponse } from 'node:http';
+import http from 'node:http';
+import https from 'node:https';
+import http2 from 'node:http2';
 import { handleServer } from './handle-server.ts';
 import * as cookie from 'cookie';
 export type Listener = (...args: any[]) => void;

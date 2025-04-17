@@ -1,5 +1,5 @@
 import { QueryRouter, Route, RouteContext, RouteOpts } from './route.ts';
-import { Server, Cors, ServerOpts, HandleCtx } from './server/server.ts';
+import { Server, ServerOpts, HandleCtx } from './server/server.ts';
 import { WsServer } from './server/ws-server.ts';
 import { CustomError } from './result/error.ts';
 

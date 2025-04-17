@@ -1,4 +1,5 @@
-import { WebSocketServer, WebSocket } from 'ws';
+import { WebSocketServer } from 'ws';
+import type { WebSocket } from 'ws';
 import { Server } from './server.ts';
 import { parseIfJson } from '../utils/parse.ts';
 
@@ -23,7 +24,10 @@ export class WsServerBase {
   listeners: { type: string; listener: ListenerFn }[] = [];
   listening: boolean = false;
   constructor(opts: WsServerBaseOpts) {
-    this.wss = opts.wss || new WebSocketServer();
+    this.wss = opts.wss;
+    if (!this.wss) {
+      throw new Error('wss is required');
+    }
     this.path = opts.path || '';
   }
   setPath(path: string) {
