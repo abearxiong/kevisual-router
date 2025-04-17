@@ -4,6 +4,34 @@ import typescript from '@rollup/plugin-typescript';
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import { dts } from 'rollup-plugin-dts';
+import alias from '@rollup/plugin-alias';
+
+const createAlias = () => {
+  return alias({
+    entries: [
+      { find: 'http', replacement: 'node:http' },
+      { find: 'https', replacement: 'node:https' },
+      { find: 'fs', replacement: 'node:fs' },
+      { find: 'path', replacement: 'node:path' },
+      { find: 'crypto', replacement: 'node:crypto' },
+      { find: 'zlib', replacement: 'node:zlib' },
+      { find: 'stream', replacement: 'node:stream' },
+      { find: 'net', replacement: 'node:net' },
+      { find: 'tty', replacement: 'node:tty' },
+      { find: 'tls', replacement: 'node:tls' },
+      { find: 'buffer', replacement: 'node:buffer' },
+      { find: 'timers', replacement: 'node:timers' },
+      // { find: 'string_decoder', replacement: 'node:string_decoder' },
+      { find: 'dns', replacement: 'node:dns' },
+      { find: 'domain', replacement: 'node:domain' },
+      { find: 'os', replacement: 'node:os' },
+      { find: 'events', replacement: 'node:events' },
+      { find: 'url', replacement: 'node:url' },
+      { find: 'assert', replacement: 'node:assert' },
+      { find: 'util', replacement: 'node:util' },
+    ],
+  });
+};
 /**
  * @type {import('rollup').RollupOptions}
  */
@@ -15,11 +43,13 @@ export default [
       format: 'es', // 输出格式设置为 ES 模块
     },
     plugins: [
-      resolve(), // 使用 @rollup/plugin-node-resolve 解析 node_modules 中的模块
+      createAlias(),
+      resolve({
+        browser: true,
+      }), // 使用 @rollup/plugin-node-resolve 解析 node_modules 中的模块
       commonjs(),
       typescript(), // 使用 @rollup/plugin-typescript 处理 TypeScript 文件
     ],
-    external: ['ws'],
   },
   {
     input: 'src/index.ts',
@@ -58,6 +88,7 @@ export default [
       format: 'es',
     },
     plugins: [
+      createAlias(),
       resolve({
         browser: false,
       }),

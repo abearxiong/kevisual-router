@@ -1,7 +1,9 @@
+// @ts-type=ws
 import { WebSocketServer } from 'ws';
 import type { WebSocket } from 'ws';
 import { Server } from './server.ts';
 import { parseIfJson } from '../utils/parse.ts';
+
 
 export const createWsServer = (server: Server) => {
   // 将 WebSocket 服务器附加到 HTTP 服务器

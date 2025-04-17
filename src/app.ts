@@ -101,3 +101,5 @@ export class App<T = {}, U = AppReqRes> {
     throw new CustomError(...args);
   }
 }
+
+export * from './browser.ts';
