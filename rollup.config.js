@@ -45,7 +45,7 @@ export default [
     plugins: [
       createAlias(),
       resolve({
-        browser: true,
+        browser: false,
       }), // 使用 @rollup/plugin-node-resolve 解析 node_modules 中的模块
       commonjs(),
       typescript(), // 使用 @rollup/plugin-typescript 处理 TypeScript 文件
