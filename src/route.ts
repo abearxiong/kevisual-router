@@ -592,6 +592,9 @@ export class QueryRouter {
       return pick(r, pickValue as any);
     });
   }
+  /**
+   * 获取handle函数, 这里会去执行parse函数
+   */
   getHandle<T = any>(router: QueryRouter, wrapperFn?: HandleFn<T>, ctx?: RouteContext) {
     return async (msg: { path: string; key?: string; [key: string]: any }, handleContext?: RouteContext) => {
       try {

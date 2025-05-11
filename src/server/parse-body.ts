@@ -22,3 +22,20 @@ export const parseSearch = (req: IncomingMessage) => {
   const parsedUrl = url.parse(req.url, true);
   return parsedUrl.query;
 };
+
+/**
+ * 把url当个key 的 value 的字符串转成json
+ * @param value
+ */
+export const parseSearchValue = (value?: string, opts?: { decode?: boolean }) => {
+  if (!value) return {};
+  const decode = opts?.decode ?? false;
+  if (decode) {
+    value = decodeURIComponent(value);
+  }
+  try {
+    return JSON.parse(value);
+  } catch (e) {
+    return {};
+  }
+};
