@@ -57,10 +57,17 @@ export type RouteContext<T = { code?: number }, S = any> = {
   /** 是否需要序列化 */
   needSerialize?: boolean;
 } & T;
-
-export type Run<T = any> = (ctx: RouteContext<T>) => Promise<typeof ctx | null | void>;
+export type SimpleObject = Record<string, any>;
+export type Run<T extends SimpleObject = {}> = (ctx: RouteContext<T>) => Promise<typeof ctx | null | void>;
 
 export type NextRoute = Pick<Route, 'id' | 'path' | 'key'>;
+export type RouteMiddleware =
+  | {
+      path: string;
+      key?: string;
+      id?: string;
+    }
+  | string;
 export type RouteOpts = {
   path?: string;
   key?: string;
@@ -69,7 +76,7 @@ export type RouteOpts = {
   nextRoute?: NextRoute; // route to run after this route
   description?: string;
   metadata?: { [key: string]: any };
-  middleware?: Route[] | string[]; // middleware
+  middleware?: RouteMiddleware[]; // middleware
   type?: 'route' | 'middleware';
   /**
    * validator: {
@@ -112,7 +119,7 @@ export class Route<U = { [key: string]: any }> {
   nextRoute?: NextRoute; // route to run after this route
   description?: string;
   metadata?: { [key: string]: any };
-  middleware?: (Route | string)[]; // middleware
+  middleware?: RouteMiddleware[]; // middleware
   type? = 'route';
   private _validator?: { [key: string]: Rule };
   schema?: { [key: string]: Schema<any> };
@@ -379,7 +386,14 @@ export class QueryRouter {
           if (isString) {
             route = this.routes.find((r) => r.id === item);
           } else {
-            route = this.routes.find((r) => r.path === item.path && r.key === item.key);
+            route = this.routes.find((r) => {
+              if (item.id) {
+                return r.id === item.id;
+              } else {
+                // key 可以是空，所以可以不严格验证
+                return r.path === item.path && r.key == item.key;
+              }
+            });
           }
           if (!route) {
             if (isString) {

@@ -1,7 +1,7 @@
 export { Route, QueryRouter, QueryRouterServer } from './route.ts';
 export { Connect, QueryConnect } from './connect.ts';
 
-export type { RouteContext, RouteOpts } from './route.ts';
+export type { RouteContext, RouteOpts, RouteMiddleware } from './route.ts';
 
 export type { Run } from './route.ts';
 
@@ -14,3 +14,5 @@ export { CustomError } from './result/error.ts';
 export { Rule, Schema, createSchema } from './validator/index.ts';
 
 export { App } from './app.ts';
+
+export * from './router-define.ts';

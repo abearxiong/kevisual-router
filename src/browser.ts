@@ -9,3 +9,5 @@ export type { Run } from './route.ts';
 export { CustomError } from './result/error.ts';
 
 export * from './server/parse-body.ts';
+
+export * from './router-define.ts';

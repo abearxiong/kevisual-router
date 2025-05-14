@@ -8,6 +8,7 @@
     "allowJs": true,
     "newLine": "LF",
     "baseUrl": "./",
+    "rootDir": "./",
     "typeRoots": [
       "node_modules/@types",
     ],

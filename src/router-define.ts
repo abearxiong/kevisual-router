@@ -1,4 +1,4 @@
-import type { QueryRouterServer, Route, RouteOpts, Run } from './route.ts';
+import type { QueryRouterServer, RouteOpts, Run, RouteMiddleware } from '@kevisual/router';
 
 // export type RouteObject<T extends readonly string[]> = {
 //   [K in T[number]]: RouteOpts;
@@ -7,7 +7,7 @@ export type { RouteOpts };
 export type RouteObject = {
   [key: string]: RouteOpts;
 };
-
+type SimpleObject = Record<string, any>;
 export function define<T extends Record<string, RouteOpts>>(
   value: T,
 ): {
@@ -45,7 +45,7 @@ class Chain {
     this.object.path = path;
     return this;
   }
-  setMiddleware(middleware: string[] | Route[]) {
+  setMiddleware(middleware: RouteMiddleware[]) {
     this.object.middleware = middleware;
     return this;
   }
@@ -57,11 +57,11 @@ class Chain {
     this.object.id = key;
     return this;
   }
-  setRun(run: Run) {
+  setRun<U extends SimpleObject = {}>(run: Run<U>) {
     this.object.run = run;
     return this;
   }
-  define(run: Run) {
+  define<U extends SimpleObject = {}>(run: Run<U>) {
     this.object.run = run;
     return this;
   }
@@ -98,8 +98,8 @@ export class QueryUtil<T extends RouteObject = RouteObject> {
     let newOpts = { app: this.app, ...opts };
     return new Chain(obj, newOpts);
   }
-  queryChain<K extends keyof T>(key: K) {
-    const value = this.routeObject[key] as RouteOpts;
+  queryChain<K extends keyof T>(key: K): (queryData?: Record<string, any>) => RouteOpts {
+    const value = this.routeObject[key];
     return (queryData?: Record<string, any>) => {
       return {
         ...value,

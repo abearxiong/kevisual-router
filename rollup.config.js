@@ -125,6 +125,7 @@ export default [
       format: 'es',
     },
     plugins: [dts()],
+    external: ['@kevisual/router'],
   },
   {
     input: 'src/router-simple.ts',
