@@ -70,6 +70,18 @@ class Chain {
     return this;
   }
 }
+class QueryChain {
+  obj: SimpleObject = {};
+  constructor(value?: SimpleObject, opts?: SimpleObject) {
+    this.obj = value || {};
+  }
+  get(queryData?: Record<string, any>): Pick<RouteOpts, 'path' | 'key' | 'metadata' | 'description' | 'validator'> {
+    return {
+      ...this.obj,
+      ...queryData,
+    };
+  }
+}
 export const util = {
   getChain: (obj: RouteOpts, opts?: ChainOptions) => {
     return new Chain(obj, opts);
@@ -77,10 +89,10 @@ export const util = {
 };
 
 export class QueryUtil<T extends RouteObject = RouteObject> {
-  routeObject: T;
+  obj: T;
   app: QueryRouterServer;
   constructor(object: T, opts?: ChainOptions) {
-    this.routeObject = object;
+    this.obj = object;
     this.app = opts?.app;
   }
   static createFormObj<U extends RouteObject>(object: U, opts?: ChainOptions) {
@@ -91,20 +103,18 @@ export class QueryUtil<T extends RouteObject = RouteObject> {
     return new QueryUtil<U>(obj, opts);
   }
   get<K extends keyof T>(key: K): RouteOpts {
-    return this.routeObject[key] as RouteOpts;
+    return this.obj[key] as RouteOpts;
   }
   chain<K extends keyof T>(key: K, opts?: ChainOptions) {
-    const obj = this.routeObject[key];
+    const obj = this.obj[key];
     let newOpts = { app: this.app, ...opts };
     return new Chain(obj, newOpts);
   }
-  queryChain<K extends keyof T>(key: K): (queryData?: Record<string, any>) => RouteOpts {
-    const value = this.routeObject[key];
-    return (queryData?: Record<string, any>) => {
-      return {
-        ...value,
-        ...queryData,
-      };
-    };
+  queryChain<K extends keyof T>(key: K) {
+    const value = this.obj[key];
+    return new QueryChain(value);
+  }
+  get routeObject() {
+    return this.obj;
   }
 }
