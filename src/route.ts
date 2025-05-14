@@ -88,6 +88,10 @@ export type RouteOpts = {
    * $#$ will be used to split path and key
    */
   idUsePath?: boolean;
+  /**
+   * id 合并的分隔符，默认为 $#$
+   */
+  delimiter?: string;
   isDebug?: boolean;
 };
 export type DefineRouteOpts = Omit<RouteOpts, 'idUsePath' | 'verify' | 'verifyKey' | 'nextRoute'>;
@@ -129,7 +133,8 @@ export class Route<U = { [key: string]: any }> {
     if (opts) {
       this.id = opts.id || nanoid();
       if (!opts.id && opts.idUsePath) {
-        this.id = path + '$#$' + key;
+        const delimiter = opts.delimiter ?? '$#$';
+        this.id = path + delimiter + key;
       }
       this.run = opts.run;
       this.nextRoute = opts.nextRoute;

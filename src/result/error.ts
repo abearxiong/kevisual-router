@@ -35,10 +35,22 @@ export class CustomError extends Error {
       tips: e?.tips,
     };
   }
+  /**
+   * 判断 throw 的错误是否不是当前这个错误
+   * @param err
+   * @returns
+   */
+  static isError(err: any) {
+    if (err instanceof CustomError || err?.code) {
+      return true;
+    }
+    return false;
+  }
   parse(e?: CustomError) {
     if (e) {
       return CustomError.parseError(e);
     } else {
+      const e = this;
       return {
         code: e?.code,
         data: e?.data,

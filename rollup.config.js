@@ -105,6 +105,28 @@ export default [
     plugins: [dts()],
   },
   {
+    input: 'src/router-define.ts',
+    output: {
+      file: 'dist/router-define.js',
+      format: 'es',
+    },
+    plugins: [
+      resolve({
+        browser: true,
+      }),
+      commonjs(),
+      typescript(),
+    ],
+  },
+  {
+    input: 'src/router-define.ts',
+    output: {
+      file: 'dist/router-define.d.ts',
+      format: 'es',
+    },
+    plugins: [dts()],
+  },
+  {
     input: 'src/router-simple.ts',
     output: {
       file: 'dist/router-simple.js',

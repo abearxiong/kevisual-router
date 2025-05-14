@@ -1,5 +1,5 @@
 import { pathToRegexp, Key } from 'path-to-regexp';
-import type { IncomingMessage, ServerResponse } from 'http';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { parseBody, parseSearch } from './server/parse-body.ts';
 
 type Req = IncomingMessage & { params?: Record<string, string> };

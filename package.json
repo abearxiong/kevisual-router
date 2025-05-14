@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/package",
   "name": "@kevisual/router",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "description": "",
   "type": "module",
   "main": "./dist/router.js",
@@ -73,6 +73,11 @@
       "import": "./dist/router-simple.js",
       "require": "./dist/router-simple.js",
       "types": "./dist/router-simple.d.ts"
+    },
+    "./define": {
+      "import": "./dist/router-define.js",
+      "require": "./dist/router-define.js",
+      "types": "./dist/router-define.d.ts"
     },
     "./simple-lib": {
       "import": "./dist/router-simple-lib.js",
