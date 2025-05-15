@@ -1,5 +1,5 @@
 import type { QueryRouterServer, RouteOpts, Run, RouteMiddleware } from '@kevisual/router';
-
+import type { DataOpts, Query, Result } from '@kevisual/query/query';
 // export type RouteObject<T extends readonly string[]> = {
 //   [K in T[number]]: RouteOpts;
 // };
@@ -70,16 +70,45 @@ class Chain {
     return this;
   }
 }
+type QueryChainOptions = {
+  query?: Query;
+  omitKeys?: string[];
+};
 class QueryChain {
   obj: SimpleObject = {};
-  constructor(value?: SimpleObject, opts?: SimpleObject) {
+  query: Query;
+  omitKeys: string[] = ['metadata', 'description', 'validator'];
+  constructor(value?: SimpleObject, opts?: QueryChainOptions) {
     this.obj = value || {};
+    this.query = opts?.query;
+    if (opts?.omitKeys) this.omitKeys = opts.omitKeys;
   }
-  get(queryData?: Record<string, any>): Pick<RouteOpts, 'path' | 'key' | 'metadata' | 'description' | 'validator'> {
+  omit(obj: SimpleObject, key: string[] = []) {
+    const newObj = { ...obj };
+    key.forEach((k) => {
+      delete newObj[k];
+    });
+    return newObj;
+  }
+  /**
+   * 生成
+   * @param queryData
+   * @returns
+   */
+  getKey(queryData?: SimpleObject): Pick<RouteOpts, 'path' | 'key' | 'metadata' | 'description' | 'validator'> {
+    const obj = this.omit(this.obj, this.omitKeys);
     return {
-      ...this.obj,
+      ...obj,
       ...queryData,
     };
+  }
+  post<R = SimpleObject, P = SimpleObject>(data: P, options?: DataOpts): Promise<Result<R>> {
+    const _queryData = this.getKey(data);
+    return this.query.post(_queryData, options);
+  }
+  get<R = SimpleObject, P = SimpleObject>(data: P, options?: DataOpts): Promise<Result<R>> {
+    const _queryData = this.getKey(data);
+    return this.query.get(_queryData, options);
   }
 }
 export const util = {
@@ -91,9 +120,11 @@ export const util = {
 export class QueryUtil<T extends RouteObject = RouteObject> {
   obj: T;
   app: QueryRouterServer;
-  constructor(object: T, opts?: ChainOptions) {
+  query: Query;
+  constructor(object: T, opts?: ChainOptions & QueryChainOptions) {
     this.obj = object;
     this.app = opts?.app;
+    this.query = opts?.query;
   }
   static createFormObj<U extends RouteObject>(object: U, opts?: ChainOptions) {
     return new QueryUtil<U>(object, opts);
@@ -108,12 +139,15 @@ export class QueryUtil<T extends RouteObject = RouteObject> {
   chain<K extends keyof T>(key: K, opts?: ChainOptions) {
     const obj = this.obj[key];
     let newOpts = { app: this.app, ...opts };
-    return new Chain(obj, newOpts);
+    return new QueryUtil.Chain(obj, newOpts);
   }
-  queryChain<K extends keyof T>(key: K) {
+  queryChain<K extends keyof T>(key: K, opts?: QueryChainOptions) {
     const value = this.obj[key];
-    return new QueryChain(value);
+    let newOpts = { query: this.query, ...opts };
+    return new QueryUtil.QueryChain(value, newOpts);
   }
+  static Chain = Chain;
+  static QueryChain = QueryChain;
   get routeObject() {
     return this.obj;
   }

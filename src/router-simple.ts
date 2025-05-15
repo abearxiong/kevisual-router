@@ -1,6 +1,6 @@
 import { pathToRegexp, Key } from 'path-to-regexp';
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { parseBody, parseSearch } from './server/parse-body.ts';
+import { parseBody, parseSearch, parseSearchValue } from './server/parse-body.ts';
 
 type Req = IncomingMessage & { params?: Record<string, string> };
 interface Route {
@@ -24,6 +24,7 @@ export class SimpleRouter {
   getSearch(req: Req) {
     return parseSearch(req);
   }
+  parseSearchValue = parseSearchValue;
   use(method: string, route: string, ...fns: Array<(req: Req, res: ServerResponse) => Promise<void> | void>) {
     const handlers = Array.isArray(fns) ? fns.flat() : [];
     const pattern = pathToRegexp(route);
