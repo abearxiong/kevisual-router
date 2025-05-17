@@ -8,8 +8,8 @@ type BaseRule = {
 
 type RuleString = {
   type: 'string';
-  minLength?: number;
-  maxLength?: number;
+  min?: number;
+  max?: number;
   regex?: string;
 } & BaseRule;
 
@@ -26,8 +26,6 @@ type RuleBoolean = {
 type RuleArray = {
   type: 'array';
   items: Rule;
-  minItems?: number;
-  maxItems?: number;
 } & BaseRule;
 
 type RuleObject = {
@@ -45,8 +43,8 @@ export const schemaFormRule = (rule: Rule): z.ZodType<any, any, any> => {
   switch (rule.type) {
     case 'string':
       let stringSchema = z.string();
-      if (rule.minLength) stringSchema = stringSchema.min(rule.minLength, `String must be at least ${rule.minLength} characters long.`);
-      if (rule.maxLength) stringSchema = stringSchema.max(rule.maxLength, `String must not exceed ${rule.maxLength} characters.`);
+      if (rule.min) stringSchema = stringSchema.min(rule.min, `String must be at least ${rule.min} characters long.`);
+      if (rule.max) stringSchema = stringSchema.max(rule.max, `String must not exceed ${rule.max} characters.`);
       if (rule.regex) stringSchema = stringSchema.regex(new RegExp(rule.regex), 'Invalid format');
       return stringSchema;
     case 'number':
