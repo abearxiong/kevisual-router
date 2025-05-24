@@ -2,6 +2,8 @@ import { QueryRouter, Route, RouteContext, RouteOpts } from './route.ts';
 import { Server, ServerOpts, HandleCtx } from './server/server.ts';
 import { WsServer } from './server/ws-server.ts';
 import { CustomError } from './result/error.ts';
+import { handleServer } from './server/handle-server.ts';
+import { IncomingMessage, ServerResponse } from 'http';
 
 type RouterHandle = (msg: { path: string; [key: string]: any }) => { code: string; data?: any; message?: string; [key: string]: any };
 type AppOptions<T = {}> = {
@@ -99,6 +101,9 @@ export class App<T = {}, U = AppReqRes> {
   throw(code?: number | string, message?: string, tips?: string): void;
   throw(...args: any[]) {
     throw new CustomError(...args);
+  }
+  static handleRequest(req: IncomingMessage, res: ServerResponse) {
+    return handleServer(req, res);
   }
 }
 
