@@ -14,8 +14,8 @@ export const createCert = (attrs: Attributes[] = [], altNames: AltNames[] = []) 
     { name: 'countryName', value: 'CN' }, // 国家代码
     { name: 'stateOrProvinceName', value: 'ZheJiang' }, // 州名
     { name: 'localityName', value: 'HangZhou' }, // 城市名
-    { name: 'organizationName', value: 'Kevisual' }, // 组织名
-    { name: 'organizationalUnitName', value: 'ev' }, // 组织单位
+    { name: 'organizationName', value: 'kevisual' }, // 组织名
+    { name: 'organizationalUnitName', value: 'kevisual' }, // 组织单位
     ...attrs,
   ];
   // attribute 根据name去重复, 后面的覆盖前面的
