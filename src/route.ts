@@ -54,7 +54,7 @@ export type RouteContext<T = { code?: number }, S = any> = {
   queryRoute?: (message: { path: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) => Promise<any>;
   index?: number;
   throw?: (code?: number | string, message?: string, tips?: string) => void;
-  /** 是否需要序列化 */
+  /** 是否需要序列化, 使用JSON.stringify和JSON.parse */
   needSerialize?: boolean;
 } & T;
 export type SimpleObject = Record<string, any>;
@@ -603,7 +603,12 @@ export class QueryRouter {
       message: res.message,
     };
   }
-  async setContext(ctx: RouteContext) {
+  /**
+   * 设置上下文
+   * @description 这里的上下文是为了在handle函数中使用
+   * @param ctx
+   */
+   setContext(ctx: RouteContext) {
     this.context = ctx;
   }
   getList(): RouteInfo[] {
@@ -647,7 +652,7 @@ export class QueryRouter {
   throw(...args: any[]) {
     throw new CustomError(...args);
   }
-  hasRoute(path: string, key?: string) {
+  hasRoute(path: string, key: string = '') {
     return this.routes.find((r) => r.path === path && r.key === key);
   }
 }

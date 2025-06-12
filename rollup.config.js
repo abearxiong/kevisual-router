@@ -60,7 +60,7 @@ export default [
     plugins: [dts()],
   },
   {
-    input: 'src/browser.ts',
+    input: 'src/app-browser.ts',
     output: {
       file: 'dist/router-browser.js',
       format: 'es',
@@ -74,7 +74,7 @@ export default [
     ],
   },
   {
-    input: 'src/browser.ts',
+    input: 'src/app-browser.ts',
     output: {
       file: 'dist/router-browser.d.ts',
       format: 'es',
