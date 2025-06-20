@@ -105,6 +105,12 @@ export class App<T = {}, U = AppReqRes> {
   static handleRequest(req: IncomingMessage, res: ServerResponse) {
     return handleServer(req, res);
   }
+  onServerRequest(fn: (req: IncomingMessage, res: ServerResponse) => void) {
+    if (!this.server) {
+      throw new Error('Server is not initialized');
+    }
+    this.server.on(fn);
+  }
 }
 
 export * from './browser.ts';

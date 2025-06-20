@@ -1,6 +1,8 @@
 export { Route, QueryRouter, QueryRouterServer } from './route.ts';
 
-export { Rule, Schema, createSchema } from './validator/index.ts';
+export type { Rule, Schema } from './validator/index.ts';
+
+export { createSchema } from './validator/index.ts';
 
 export type { RouteContext, RouteOpts } from './route.ts';
 
