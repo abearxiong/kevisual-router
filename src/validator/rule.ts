@@ -1,5 +1,4 @@
-import { z, ZodError, Schema } from 'zod';
-export { Schema };
+import { z, ZodError } from 'zod';
 type BaseRule = {
   value?: any;
   required?: boolean;
@@ -64,7 +63,7 @@ export const schemaFormRule = (rule: Rule): z.ZodType<any, any, any> => {
       throw new Error(`Unknown rule type: ${(rule as any)?.type}`);
   }
 };
-export const createSchema = (rule: Rule): Schema => {
+export const createSchema = (rule: Rule): z.ZodType<any, any, any> => {
   try {
     rule.required = rule.required ?? false;
     if (!rule.required) {
