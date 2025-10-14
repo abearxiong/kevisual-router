@@ -43,10 +43,11 @@ export class WsServerBase {
     this.listening = true;
 
     this.wss.on('connection', (ws) => {
-      ws.on('message', async (message: string) => {
+      ws.on('message', async (message: string | Buffer) => {
         const data = parseIfJson(message);
         if (typeof data === 'string') {
-          ws.emit('string', data);
+          const cleanMessage = data.trim().replace(/^["']|["']$/g, '');
+          ws.emit('string', cleanMessage);
           return;
         }
         const { type, data: typeData, ...rest } = data;
@@ -83,7 +84,7 @@ export class WsServerBase {
         if (message === 'close') {
           ws.close();
         }
-        if (message === 'ping') {
+        if (message == 'ping') {
           ws.send('pong');
         }
       });

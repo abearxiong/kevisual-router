@@ -11,7 +11,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@kevisual/router": "link:../.."
+    "@kevisual/router": "../.."
   },
   "devDependencies": {
     "cookie": "^1.0.2",
