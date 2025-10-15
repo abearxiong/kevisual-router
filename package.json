@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/package",
   "name": "@kevisual/router",
-  "version": "0.0.28",
+  "version": "0.0.29",
   "description": "",
   "type": "module",
   "main": "./dist/router.js",
@@ -24,7 +24,7 @@
     "@kevisual/local-proxy": "^0.0.6",
     "@kevisual/query": "^0.0.29",
     "@rollup/plugin-alias": "^5.1.1",
-    "@rollup/plugin-commonjs": "^28.0.6",
+    "@rollup/plugin-commonjs": "28.0.6",
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@rollup/plugin-typescript": "^12.1.4",
     "@types/lodash-es": "^4.17.12",

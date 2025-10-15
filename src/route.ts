@@ -3,8 +3,9 @@ import { CustomError } from './result/error.ts';
 import { Schema, Rule, createSchema } from './validator/index.ts';
 import { pick } from './utils/pick.ts';
 import { get } from 'lodash-es';
+import { listenProcess } from './utils/listen-process.ts';
 
-export type RouterContextT = { code?: number; [key: string]: any };
+export type RouterContextT = { code?: number;[key: string]: any };
 export type RouteContext<T = { code?: number }, S = any> = {
   // run first
   query?: { [key: string]: any };
@@ -47,7 +48,7 @@ export type RouteContext<T = { code?: number }, S = any> = {
   error?: any;
   /** 请求 route的返回结果，包函ctx */
   call?: (
-    message: { path: string; key?: string; payload?: any; [key: string]: any } | { id: string; apyload?: any; [key: string]: any },
+    message: { path: string; key?: string; payload?: any;[key: string]: any } | { id: string; apyload?: any;[key: string]: any },
     ctx?: RouteContext & { [key: string]: any },
   ) => Promise<any>;
   /** 请求 route的返回结果，不包函ctx */
@@ -63,10 +64,10 @@ export type Run<T extends SimpleObject = {}> = (ctx: RouteContext<T>) => Promise
 export type NextRoute = Pick<Route, 'id' | 'path' | 'key'>;
 export type RouteMiddleware =
   | {
-      path: string;
-      key?: string;
-      id?: string;
-    }
+    path: string;
+    key?: string;
+    id?: string;
+  }
   | string;
 export type RouteOpts = {
   path?: string;
@@ -303,7 +304,7 @@ export class Route<U = { [key: string]: any }> {
     }
     return this;
   }
-  addTo(router: QueryRouter | { add: (route: Route) => void; [key: string]: any }) {
+  addTo(router: QueryRouter | { add: (route: Route) => void;[key: string]: any }) {
     router.add(this);
   }
   setData(data: any) {
@@ -608,7 +609,7 @@ export class QueryRouter {
    * @description 这里的上下文是为了在handle函数中使用
    * @param ctx
    */
-   setContext(ctx: RouteContext) {
+  setContext(ctx: RouteContext) {
     this.context = ctx;
   }
   getList(): RouteInfo[] {
@@ -620,7 +621,7 @@ export class QueryRouter {
    * 获取handle函数, 这里会去执行parse函数
    */
   getHandle<T = any>(router: QueryRouter, wrapperFn?: HandleFn<T>, ctx?: RouteContext) {
-    return async (msg: { path: string; key?: string; [key: string]: any }, handleContext?: RouteContext) => {
+    return async (msg: { path: string; key?: string;[key: string]: any }, handleContext?: RouteContext) => {
       try {
         const context = { ...ctx, ...handleContext };
         const res = await router.parse(msg, context);
@@ -655,6 +656,17 @@ export class QueryRouter {
   hasRoute(path: string, key: string = '') {
     return this.routes.find((r) => r.path === path && r.key === key);
   }
+  /**
+   * 等待程序运行, 获取到message的数据,就执行
+   *
+   * emitter = process
+   * -- .exit
+   * -- .on
+   * -- .send
+   */
+  wait(params?: { path?: string; key?: string; payload?: any }, opts?: { emitter?: any, timeout?: number }) {
+    return listenProcess({ app: this, params, ...opts });
+  }
 }
 
 type QueryRouterServerOpts = {
@@ -662,7 +674,7 @@ type QueryRouterServerOpts = {
   context?: RouteContext;
 };
 interface HandleFn<T = any> {
-  (msg: { path: string; [key: string]: any }, ctx?: any): { code: string; data?: any; message?: string; [key: string]: any };
+  (msg: { path: string;[key: string]: any }, ctx?: any): { code: string; data?: any; message?: string;[key: string]: any };
   (res: RouteContext<T>): any;
 }
 /**
