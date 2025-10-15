@@ -1,4 +1,4 @@
-export { Route, QueryRouter, QueryRouterServer } from './route.ts';
+export { Route, QueryRouter, QueryRouterServer, Mini } from './route.ts';
 
 export type { Rule, Schema } from './validator/index.ts';
 

@@ -751,3 +751,6 @@ export class QueryRouterServer extends QueryRouter {
     }
   }
 }
+
+
+export const Mini = QueryRouterServer

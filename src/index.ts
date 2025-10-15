@@ -1,4 +1,4 @@
-export { Route, QueryRouter, QueryRouterServer } from './route.ts';
+export { Route, QueryRouter, QueryRouterServer, Mini } from './route.ts';
 export { Connect, QueryConnect } from './connect.ts';
 
 export type { RouteContext, RouteOpts, RouteMiddleware } from './route.ts';
