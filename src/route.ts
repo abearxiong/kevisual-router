@@ -1,4 +1,4 @@
-import { nanoid } from 'nanoid';
+import { nanoid, random } from 'nanoid';
 import { CustomError } from './result/error.ts';
 import { Schema, Rule, createSchema } from './validator/index.ts';
 import { pick } from './utils/pick.ts';
@@ -88,7 +88,7 @@ export type RouteOpts = {
    * }
    */
   validator?: { [key: string]: Rule };
-  schema?: { [key: string]: Schema<any> };
+  schema?: { [key: string]: any };
   isVerify?: boolean;
   verify?: (ctx?: RouteContext, dev?: boolean) => boolean;
   verifyKey?: (key: string, ctx?: RouteContext, dev?: boolean) => boolean;
@@ -123,7 +123,7 @@ export class Route<U = { [key: string]: any }> {
   middleware?: RouteMiddleware[]; // middleware
   type? = 'route';
   private _validator?: { [key: string]: Rule };
-  schema?: { [key: string]: Schema<any> };
+  schema?: { [key: string]: any };
   data?: any;
   /**
    * 是否需要验证
@@ -134,6 +134,9 @@ export class Route<U = { [key: string]: any }> {
    */
   isDebug?: boolean;
   constructor(path: string, key: string = '', opts?: RouteOpts) {
+    if (!path) {
+      path = nanoid(8)
+    }
     path = path.trim();
     key = key.trim();
     this.path = path;
@@ -261,6 +264,17 @@ export class Route<U = { [key: string]: any }> {
     this.validator = validator;
     return this;
   }
+  prompt(description: string): this;
+  prompt(description: Function): this;
+  prompt(...args: any[]) {
+    const [description] = args;
+    if (typeof description === 'string') {
+      this.description = description;
+    } else if (typeof description === 'function') {
+      this.description = description() || ''; // 如果是Promise，需要addTo App之前就要获取应有的函数了。
+    }
+    return this;
+  }
   define<T extends { [key: string]: any } = RouterContextT>(opts: DefineRouteOpts): this;
   define<T extends { [key: string]: any } = RouterContextT>(fn: Run<T & U>): this;
   define<T extends { [key: string]: any } = RouterContextT>(key: string, fn: Run<T & U>): this;
@@ -301,6 +315,27 @@ export class Route<U = { [key: string]: any }> {
     if (typeof path === 'string' && typeof key === 'string' && typeof opts === 'function') {
       setOpts({ path, key, run: opts });
       return this;
+    }
+    return this;
+  }
+
+  update(opts: DefineRouteOpts, checkList?: string[]): this {
+    const keys = Object.keys(opts);
+    const defaultCheckList = ['path', 'key', 'run', 'nextRoute', 'description', 'metadata', 'middleware', 'type', 'validator', 'isVerify', 'isDebug'];
+    checkList = checkList || defaultCheckList;
+    for (let item of keys) {
+      if (!checkList.includes(item)) {
+        continue;
+      }
+      if (item === 'validator') {
+        this.validator = opts[item];
+        continue;
+      }
+      if (item === 'middleware') {
+        this.middleware = this.middleware.concat(opts[item]);
+        continue;
+      }
+      this[item] = opts[item];
     }
     return this;
   }
@@ -583,8 +618,9 @@ export class QueryRouter {
       } else {
         return { code: 404, body: null, message: 'Not found route' };
       }
+      return await this.parse({ ...message, path, key }, { ...this.context, ...ctx });
     } else if (path) {
-      return await this.parse({ ...message, path }, { ...this.context, ...ctx });
+      return await this.parse({ ...message, path, key }, { ...this.context, ...ctx });
     } else {
       return { code: 404, body: null, message: 'Not found path' };
     }
@@ -596,7 +632,7 @@ export class QueryRouter {
    * @param ctx
    * @returns
    */
-  async queryRoute(message: { path: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
+  async queryRoute(message: { id?: string; path: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
     const res = await this.parse(message, { ...this.context, ...ctx });
     return {
       code: res.code,
@@ -621,9 +657,19 @@ export class QueryRouter {
    * 获取handle函数, 这里会去执行parse函数
    */
   getHandle<T = any>(router: QueryRouter, wrapperFn?: HandleFn<T>, ctx?: RouteContext) {
-    return async (msg: { path: string; key?: string;[key: string]: any }, handleContext?: RouteContext) => {
+    return async (msg: { id?: string; path?: string; key?: string;[key: string]: any }, handleContext?: RouteContext) => {
       try {
         const context = { ...ctx, ...handleContext };
+        if (msg.id) {
+          const route = router.routes.find((r) => r.id === msg.id);
+          if (route) {
+            msg.path = route.path;
+            msg.key = route.key;
+          } else {
+            return { code: 404, message: 'Not found route' };
+          }
+        }
+        // @ts-ignore
         const res = await router.parse(msg, context);
         if (wrapperFn) {
           res.data = res.body;

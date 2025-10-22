@@ -82,7 +82,7 @@ export class App<T = {}, U = AppReqRes> {
     }
     return new Route(path, key, opts);
   }
-  async call(message: { path: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
+  async call(message: { id?: string, path?: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
     const router = this.router;
     return await router.call(message, ctx);
   }

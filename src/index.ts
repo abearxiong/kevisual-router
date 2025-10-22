@@ -11,7 +11,9 @@ export { Server, handleServer } from './server/index.ts';
  */
 export { CustomError } from './result/error.ts';
 
-export { Rule, Schema, createSchema } from './validator/index.ts';
+export { createSchema } from './validator/index.ts';
+
+export type { Rule, Schema,  } from './validator/index.ts';
 
 export { App } from './app.ts';
 
