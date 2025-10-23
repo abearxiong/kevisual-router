@@ -5,7 +5,7 @@ import { CustomError } from './result/error.ts';
 import { handleServer } from './server/handle-server.ts';
 import { IncomingMessage, ServerResponse } from 'http';
 
-type RouterHandle = (msg: { path: string; [key: string]: any }) => { code: string; data?: any; message?: string; [key: string]: any };
+type RouterHandle = (msg: { path: string;[key: string]: any }) => { code: string; data?: any; message?: string;[key: string]: any };
 type AppOptions<T = {}> = {
   router?: QueryRouter;
   server?: Server;
@@ -82,6 +82,19 @@ export class App<T = {}, U = AppReqRes> {
     }
     return new Route(path, key, opts);
   }
+  prompt(description: string): Route<Required<RouteContext>>;
+  prompt(description: Function): Route<Required<RouteContext>>;
+  prompt(...args: any[]) {
+    const [desc] = args;
+    let description = ''
+    if (typeof desc === 'string') {
+      description = desc;
+    } else if (typeof desc === 'function') {
+      description = desc() || ''; // 如果是Promise，需要addTo App之前就要获取应有的函数了。
+    }
+    return new Route('', '', { description });
+  }
+  
   async call(message: { id?: string, path?: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
     const router = this.router;
     return await router.call(message, ctx);

@@ -133,7 +133,7 @@ export class Route<U = { [key: string]: any }> {
    * 是否开启debug，开启后会打印错误信息
    */
   isDebug?: boolean;
-  constructor(path: string, key: string = '', opts?: RouteOpts) {
+  constructor(path: string = '', key: string = '', opts?: RouteOpts) {
     if (!path) {
       path = nanoid(8)
     }
@@ -766,6 +766,18 @@ export class QueryRouterServer extends QueryRouter {
       return new Route(path, key);
     }
     return new Route(path, key, opts);
+  }
+  prompt(description: string): Route<Required<RouteContext>>;
+  prompt(description: Function): Route<Required<RouteContext>>;
+  prompt(...args: any[]) {
+    const [desc] = args;
+    let description = ''
+    if (typeof desc === 'string') {
+      description = desc;
+    } else if (typeof desc === 'function') {
+      description = desc() || ''; // 如果是Promise，需要addTo App之前就要获取应有的函数了。
+    }
+    return new Route('', '', { description });
   }
 
   /**
