@@ -103,7 +103,7 @@ export type RouteOpts = {
   isDebug?: boolean;
 };
 export type DefineRouteOpts = Omit<RouteOpts, 'idUsePath' | 'verify' | 'verifyKey' | 'nextRoute'>;
-const pickValue = ['path', 'key', 'id', 'description', 'type', 'validator', 'middleware'] as const;
+const pickValue = ['path', 'key', 'id', 'description', 'type', 'validator', 'middleware', 'metadata'] as const;
 export type RouteInfo = Pick<Route, (typeof pickValue)[number]>;
 export class Route<U = { [key: string]: any }> {
   /**
