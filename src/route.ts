@@ -702,6 +702,19 @@ export class QueryRouter {
   hasRoute(path: string, key: string = '') {
     return this.routes.find((r) => r.path === path && r.key === key);
   }
+  createRouteList(force: boolean = false) {
+    const hasListRoute = this.hasRoute('route', 'list');
+    if (!hasListRoute || force) {
+      const listRoute = new Route('route', 'list', {
+        description: '列出当前应用下的所有的路由信息',
+        run: async (ctx: RouteContext) => {
+          const list = this.getList();
+          ctx.body = list;
+        },
+      });
+      this.add(listRoute);
+    }
+  }
   /**
    * 等待程序运行, 获取到message的数据,就执行
    *
@@ -710,7 +723,11 @@ export class QueryRouter {
    * -- .on
    * -- .send
    */
-  wait(params?: { path?: string; key?: string; payload?: any }, opts?: { emitter?: any, timeout?: number }) {
+  wait(params?: { path?: string; key?: string; payload?: any }, opts?: { emitter?: any, timeout?: number, getList?: boolean }) {
+    const getList = opts?.getList ?? true;
+    if (getList) {
+      this.createRouteList();
+    }
     return listenProcess({ app: this, params, ...opts });
   }
 }

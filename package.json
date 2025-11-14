@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/package",
   "name": "@kevisual/router",
-  "version": "0.0.31",
+  "version": "0.0.32",
   "description": "",
   "type": "module",
   "main": "./dist/router.js",
@@ -23,19 +23,19 @@
   "devDependencies": {
     "@kevisual/local-proxy": "^0.0.6",
     "@kevisual/query": "^0.0.29",
-    "@rollup/plugin-alias": "^5.1.1",
-    "@rollup/plugin-commonjs": "28.0.8",
+    "@rollup/plugin-alias": "^6.0.0",
+    "@rollup/plugin-commonjs": "29.0.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@rollup/plugin-typescript": "^12.3.0",
     "@types/lodash-es": "^4.17.12",
-    "@types/node": "^24.9.1",
-    "@types/send": "^1.2.0",
+    "@types/node": "^24.10.1",
+    "@types/send": "^1.2.1",
     "@types/ws": "^8.18.1",
     "@types/xml2js": "^0.4.14",
     "cookie": "^1.0.2",
     "lodash-es": "^4.17.21",
     "nanoid": "^5.1.6",
-    "rollup": "^4.52.5",
+    "rollup": "^4.53.2",
     "rollup-plugin-dts": "^6.2.3",
     "ts-loader": "^9.5.4",
     "ts-node": "^10.9.2",
@@ -51,7 +51,7 @@
   },
   "dependencies": {
     "path-to-regexp": "^8.3.0",
-    "selfsigned": "^3.0.1",
+    "selfsigned": "^4.0.0",
     "send": "^1.2.0"
   },
   "publishConfig": {
