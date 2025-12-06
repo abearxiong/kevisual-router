@@ -16,16 +16,18 @@ type AppOptions<T = {}> = {
   io?: boolean;
   ioOpts?: { routerHandle?: RouterHandle; routerContext?: RouteContext<T>; path?: string };
 };
-export type AppReqRes = HandleCtx;
+
+export type AppRouteContext<T = {}> = HandleCtx & RouteContext<T> & { app: App<T> };
 
 /**
  *  封装了 Router 和 Server 的 App 模块，处理http的请求和响应，内置了 Cookie 和 Token 和 res 的处理
+ *  U - Route Context的扩展类型
  */
-export class App<T = {}, U = AppReqRes> {
+export class App<U = {}> {
   router: QueryRouter;
   server: Server;
   io: WsServer;
-  constructor(opts?: AppOptions<T>) {
+  constructor(opts?: AppOptions<U>) {
     const router = opts?.router || new QueryRouter();
     const server = opts?.server || new Server(opts?.serverOptions || {});
     server.setHandle(router.getHandle(router, opts?.routerHandle, opts?.routerContext));
@@ -62,10 +64,10 @@ export class App<T = {}, U = AppReqRes> {
   add = this.addRoute;
 
   Route = Route;
-  route(opts: RouteOpts): Route<U>;
-  route(path: string, key?: string): Route<U>;
-  route(path: string, opts?: RouteOpts): Route<U>;
-  route(path: string, key?: string, opts?: RouteOpts): Route<U>;
+  route(opts: RouteOpts<AppRouteContext<U>>): Route<AppRouteContext<U>>;
+  route(path: string, key?: string): Route<AppRouteContext<U>>;
+  route(path: string, opts?: RouteOpts<AppRouteContext<U>>): Route<AppRouteContext<U>>;
+  route(path: string, key?: string, opts?: RouteOpts<AppRouteContext<U>>): Route<AppRouteContext<U>>;
   route(...args: any[]) {
     const [path, key, opts] = args;
     if (typeof path === 'object') {
@@ -82,8 +84,8 @@ export class App<T = {}, U = AppReqRes> {
     }
     return new Route(path, key, opts);
   }
-  prompt(description: string): Route<Required<RouteContext>>;
-  prompt(description: Function): Route<Required<RouteContext>>;
+  prompt(description: string): Route<AppRouteContext<U>>
+  prompt(description: Function): Route<AppRouteContext<U>>
   prompt(...args: any[]) {
     const [desc] = args;
     let description = ''
@@ -94,13 +96,19 @@ export class App<T = {}, U = AppReqRes> {
     }
     return new Route('', '', { description });
   }
-  
-  async call(message: { id?: string, path?: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
+
+  async call(message: { id?: string, path?: string; key?: string; payload?: any }, ctx?: AppRouteContext<U> & { [key: string]: any }) {
     const router = this.router;
     return await router.call(message, ctx);
   }
-  async queryRoute(path: string, key?: string, payload?: any, ctx?: RouteContext & { [key: string]: any }) {
+  /**
+   * @deprecated
+   */
+  async queryRoute(path: string, key?: string, payload?: any, ctx?: AppRouteContext<U> & { [key: string]: any }) {
     return await this.router.queryRoute({ path, key, payload }, ctx);
+  }
+  async run(path: string, key?: string, payload?: any, ctx?: AppRouteContext<U> & { [key: string]: any }) {
+    return await this.router.run({ path, key, payload }, ctx);
   }
   exportRoutes() {
     return this.router.exportRoutes();

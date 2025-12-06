@@ -1,8 +1,6 @@
-import { nanoid, random } from 'nanoid';
+import { nanoid } from 'nanoid';
 import { CustomError } from './result/error.ts';
-import { Schema, Rule, createSchema } from './validator/index.ts';
 import { pick } from './utils/pick.ts';
-import { get } from 'lodash-es';
 import { listenProcess } from './utils/listen-process.ts';
 
 export type RouterContextT = { code?: number;[key: string]: any };
@@ -12,6 +10,7 @@ export type RouteContext<T = { code?: number }, S = any> = {
   // response body
   /** return body */
   body?: number | string | Object;
+  forward?: (response: { code: number, data?: any, message?: any }) => void;
   /** return code */
   code?: number;
   /** return msg */
@@ -39,20 +38,15 @@ export type RouteContext<T = { code?: number }, S = any> = {
   nextQuery?: { [key: string]: any };
   // end
   end?: boolean;
-  // 处理router manager
-  // TODO:
-  /**
-   * 请求 route的返回结果，包函ctx
-   */
-  queryRouter?: QueryRouter;
+  app?: QueryRouter;
   error?: any;
-  /** 请求 route的返回结果，包函ctx */
+  /** 请求 route的返回结果，不解析body为data */
   call?: (
     message: { path: string; key?: string; payload?: any;[key: string]: any } | { id: string; apyload?: any;[key: string]: any },
     ctx?: RouteContext & { [key: string]: any },
   ) => Promise<any>;
-  /** 请求 route的返回结果，不包函ctx */
-  queryRoute?: (message: { path: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) => Promise<any>;
+  /** 请求 route的返回结果，解析了body为data，就类同于 query.post获取的数据*/
+  run?: (message: { path: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) => Promise<any>;
   index?: number;
   throw?: (code?: number | string, message?: string, tips?: string) => void;
   /** 是否需要序列化, 使用JSON.stringify和JSON.parse */
@@ -69,29 +63,16 @@ export type RouteMiddleware =
     id?: string;
   }
   | string;
-export type RouteOpts = {
+export type RouteOpts<T = {}> = {
   path?: string;
   key?: string;
   id?: string;
-  run?: Run;
+  run?: Run<T>;
   nextRoute?: NextRoute; // route to run after this route
   description?: string;
   metadata?: { [key: string]: any };
   middleware?: RouteMiddleware[]; // middleware
   type?: 'route' | 'middleware';
-  /**
-   * validator: {
-   *  packageName: {
-   *    type: 'string',
-   *    required: true,
-   *  },
-   * }
-   */
-  validator?: { [key: string]: Rule };
-  schema?: { [key: string]: any };
-  isVerify?: boolean;
-  verify?: (ctx?: RouteContext, dev?: boolean) => boolean;
-  verifyKey?: (key: string, ctx?: RouteContext, dev?: boolean) => boolean;
   /**
    * $#$ will be used to split path and key
    */
@@ -102,8 +83,8 @@ export type RouteOpts = {
   delimiter?: string;
   isDebug?: boolean;
 };
-export type DefineRouteOpts = Omit<RouteOpts, 'idUsePath' | 'verify' | 'verifyKey' | 'nextRoute'>;
-const pickValue = ['path', 'key', 'id', 'description', 'type', 'validator', 'middleware', 'metadata'] as const;
+export type DefineRouteOpts = Omit<RouteOpts, 'idUsePath' | 'nextRoute'>;
+const pickValue = ['path', 'key', 'id', 'description', 'type', 'middleware', 'metadata'] as const;
 export type RouteInfo = Pick<Route, (typeof pickValue)[number]>;
 export class Route<U = { [key: string]: any }> {
   /**
@@ -121,13 +102,7 @@ export class Route<U = { [key: string]: any }> {
   metadata?: { [key: string]: any };
   middleware?: RouteMiddleware[]; // middleware
   type? = 'route';
-  private _validator?: { [key: string]: Rule };
-  schema?: { [key: string]: any };
   data?: any;
-  /**
-   * 是否需要验证
-   */
-  isVerify?: boolean;
   /**
    * 是否开启debug，开启后会打印错误信息
    */
@@ -151,118 +126,16 @@ export class Route<U = { [key: string]: any }> {
       this.description = opts.description;
       this.metadata = opts.metadata;
       this.type = opts.type || 'route';
-      this.validator = opts.validator;
       this.middleware = opts.middleware || [];
       this.key = opts.key || key;
       this.path = opts.path || path;
-      this.isVerify = opts.isVerify ?? true;
-      this.createSchema();
     } else {
-      this.isVerify = true;
       this.middleware = [];
       this.id = nanoid();
     }
     this.isDebug = opts?.isDebug ?? false;
   }
-  private createSchema() {
-    try {
-      const validator = this.validator;
-      const keys = Object.keys(validator || {});
-      const schemaList = keys.map((key) => {
-        return { [key]: createSchema(validator[key]) };
-      });
-      const schema = schemaList.reduce((prev, current) => {
-        return { ...prev, ...current };
-      }, {});
-      this.schema = schema;
-    } catch (e) {
-      console.error('createSchema error:', e);
-    }
-  }
 
-  /**
-   * set validator and create schema
-   * @param validator
-   */
-  set validator(validator: { [key: string]: Rule }) {
-    this._validator = validator;
-    this.createSchema();
-  }
-  get validator() {
-    return this._validator || {};
-  }
-  /**
-   * has code, body, message in ctx, return ctx if has error
-   * @param ctx
-   * @param dev
-   * @returns
-   */
-  verify(ctx: RouteContext, dev = false) {
-    const query = ctx.query || {};
-    const schema = this.schema || {};
-    const validator = this.validator;
-    const check = () => {
-      const queryKeys = Object.keys(validator);
-      for (let i = 0; i < queryKeys.length; i++) {
-        const key = queryKeys[i];
-        const value = query[key];
-        if (schema[key]) {
-          const result = schema[key].safeParse(value);
-          if (!result.success) {
-            const path = result.error.errors[0]?.path?.join?.('.properties.');
-            let message = 'Invalid params';
-            if (path) {
-              const keyS = `${key}.properties.${path}.message`;
-              message = get(validator, keyS, 'Invalid params') as any;
-            }
-            throw new CustomError(500, message);
-          }
-        }
-      }
-    };
-    check();
-  }
-
-  /**
-   * Need to manully call return ctx fn and configure body, code, message
-   * @param key
-   * @param ctx
-   * @param dev
-   * @returns
-   */
-  verifyKey(key: string, ctx: RouteContext, dev = false) {
-    const query = ctx.query || {};
-    const schema = this.schema || {};
-    const validator = this.validator;
-    const check = () => {
-      const value = query[key];
-      if (schema[key]) {
-        try {
-          schema[key].parse(value);
-        } catch (e) {
-          if (dev) {
-            return {
-              message: validator[key].message || 'Invalid params',
-              path: this.path,
-              key: this.key,
-              error: e.message.toString(),
-            };
-          }
-          return {
-            message: validator[key].message || 'Invalid params',
-            path: this.path,
-            key: this.key,
-          };
-        }
-      }
-    };
-    const checkRes = check();
-    return checkRes;
-  }
-  setValidator(validator: { [key: string]: Rule }) {
-    this.validator = validator;
-    return this;
-  }
   prompt(description: string): this;
   prompt(description: Function): this;
   prompt(...args: any[]) {
@@ -283,13 +156,9 @@ export class Route<U = { [key: string]: any }> {
     // 全覆盖，所以opts需要准确，不能由idUsePath 需要check的变量
     const setOpts = (opts: DefineRouteOpts) => {
       const keys = Object.keys(opts);
-      const checkList = ['path', 'key', 'run', 'nextRoute', 'description', 'metadata', 'middleware', 'type', 'validator', 'isVerify', 'isDebug'];
+      const checkList = ['path', 'key', 'run', 'nextRoute', 'description', 'metadata', 'middleware', 'type', 'isDebug'];
       for (let item of keys) {
         if (!checkList.includes(item)) {
-          continue;
-        }
-        if (item === 'validator') {
-          this.validator = opts[item];
           continue;
         }
         if (item === 'middleware') {
@@ -320,14 +189,10 @@ export class Route<U = { [key: string]: any }> {
 
   update(opts: DefineRouteOpts, checkList?: string[]): this {
     const keys = Object.keys(opts);
-    const defaultCheckList = ['path', 'key', 'run', 'nextRoute', 'description', 'metadata', 'middleware', 'type', 'validator', 'isVerify', 'isDebug'];
+    const defaultCheckList = ['path', 'key', 'run', 'nextRoute', 'description', 'metadata', 'middleware', 'type', 'isDebug'];
     checkList = checkList || defaultCheckList;
     for (let item of keys) {
       if (!checkList.includes(item)) {
-        continue;
-      }
-      if (item === 'validator') {
-        this.validator = opts[item];
         continue;
       }
       if (item === 'middleware') {
@@ -360,10 +225,10 @@ export class QueryRouter {
   }
 
   add(route: Route) {
-    const has = this.routes.find((r) => r.path === route.path && r.key === route.key);
-    if (has) {
+    const has = this.routes.findIndex((r) => r.path === route.path && r.key === route.key);
+    if (has !== -1) {
       // remove the old route
-      this.routes = this.routes.filter((r) => r.id !== has.id);
+      this.routes.splice(has, 1);
     }
     this.routes.push(route);
   }
@@ -460,19 +325,6 @@ export class QueryRouter {
       for (let i = 0; i < routeMiddleware.length; i++) {
         const middleware = routeMiddleware[i];
         if (middleware) {
-          if (middleware?.isVerify) {
-            try {
-              middleware.verify(ctx);
-            } catch (e) {
-              if (middleware?.isDebug) {
-                console.error('=====debug====:', 'middleware verify error:', e.message);
-              }
-              ctx.message = e.message;
-              ctx.code = 500;
-              ctx.body = null;
-              return ctx;
-            }
-          }
           try {
             await middleware.run(ctx);
           } catch (e) {
@@ -503,19 +355,6 @@ export class QueryRouter {
     // run route
     if (route) {
       if (route.run) {
-        if (route?.isVerify) {
-          try {
-            route.verify(ctx);
-          } catch (e) {
-            if (route?.isDebug) {
-              console.error('=====debug====:', 'verify error:', e.message);
-            }
-            ctx.message = e.message;
-            ctx.code = 500;
-            ctx.body = null;
-            return ctx;
-          }
-        }
         try {
           await route.run(ctx);
         } catch (e) {
@@ -588,9 +427,20 @@ export class QueryRouter {
     ctx.throw = this.throw;
     ctx.app = this;
     ctx.call = this.call.bind(this);
-    ctx.queryRoute = this.queryRoute.bind(this);
+    ctx.run = this.run.bind(this);
     ctx.index = 0;
     ctx.progress = ctx.progress || [];
+    ctx.forward = (response: { code: number; data?: any; message?: any }) => {
+      if (response.code) {
+        ctx.code = response.code;
+      }
+      if (response.data !== undefined) {
+        ctx.body = response.data;
+      }
+      if (response.message !== undefined) {
+        ctx.message = response.message;
+      }
+    }
     const res = await this.runRoute(path, key, ctx);
     const serialize = ctx.needSerialize ?? true; // 是否需要序列化
     if (serialize) {
@@ -628,9 +478,24 @@ export class QueryRouter {
    * 请求 result 的数据
    * @param message
    * @param ctx
+   * @deprecated use run or call instead
    * @returns
    */
   async queryRoute(message: { id?: string; path: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
+    const res = await this.call(message, { ...this.context, ...ctx });
+    return {
+      code: res.code,
+      data: res.body,
+      message: res.message,
+    };
+  }
+  /**
+   * Router Run获取数据
+   * @param message 
+   * @param ctx 
+   * @returns 
+   */
+  async run(message: { id?: string; path?: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
     const res = await this.call(message, { ...this.context, ...ctx });
     return {
       code: res.code,
@@ -658,17 +523,7 @@ export class QueryRouter {
     return async (msg: { id?: string; path?: string; key?: string;[key: string]: any }, handleContext?: RouteContext) => {
       try {
         const context = { ...ctx, ...handleContext };
-        if (msg.id) {
-          const route = router.routes.find((r) => r.id === msg.id);
-          if (route) {
-            msg.path = route.path;
-            msg.key = route.key;
-          } else {
-            return { code: 404, message: 'Not found route' };
-          }
-        }
-        // @ts-ignore
-        const res = await router.parse(msg, context);
+        const res = await router.call(msg, context);
         if (wrapperFn) {
           res.data = res.body;
           return wrapperFn(res, context);
@@ -796,34 +651,19 @@ export class QueryRouterServer extends QueryRouter {
   }
 
   /**
-   * 等于queryRoute，但是调用了handle
+   * 调用了handle
    * @param param0
    * @returns
    */
-  async run({ path, key, payload }: { path: string; key?: string; payload?: any }) {
+  async run({ path, key, payload }: { path: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
     const handle = this.handle;
-    const resultError = (error: string, code = 500) => {
-      const r = {
-        code: code,
-        message: error,
-      };
-      return r;
-    };
-    try {
-      const end = handle({ path, key, ...payload });
-      return end;
-    } catch (e) {
-      if (e.code && typeof e.code === 'number') {
-        return {
-          code: e.code,
-          message: e.message,
-        };
-      } else {
-        return resultError('Router Server error');
-      }
+    if (handle) {
+      const result = await this.call({ path, key, payload }, ctx);
+      return handle(result);
     }
+    return super.run({ path, key, payload }, ctx);
   }
 }
 
 
-export const Mini = QueryRouterServer
+export class Mini extends QueryRouterServer { }

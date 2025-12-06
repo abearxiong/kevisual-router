@@ -11,8 +11,8 @@ type SimpleObject = Record<string, any>;
 export function define<T extends Record<string, RouteOpts>>(
   value: T,
 ): {
-  [K in keyof T]: T[K] & RouteOpts;
-} {
+    [K in keyof T]: T[K] & RouteOpts;
+  } {
   return value as { [K in keyof T]: T[K] & RouteOpts };
 }
 
@@ -95,7 +95,7 @@ class QueryChain {
    * @param queryData
    * @returns
    */
-  getKey(queryData?: SimpleObject): Pick<RouteOpts, 'path' | 'key' | 'metadata' | 'description' | 'validator'> {
+  getKey(queryData?: SimpleObject): Pick<RouteOpts, 'path' | 'key' | 'metadata' | 'description'> {
     const obj = this.omit(this.obj, this.omitKeys);
     return {
       ...obj,

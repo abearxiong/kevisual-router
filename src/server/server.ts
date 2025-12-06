@@ -53,7 +53,7 @@ export type ServerOpts = {
   /**path default `/api/router` */
   path?: string;
   /**handle Fn */
-  handle?: (msg?: { path: string; key?: string; [key: string]: any }, ctx?: { req: http.IncomingMessage; res: http.ServerResponse }) => any;
+  handle?: (msg?: { path: string; key?: string;[key: string]: any }, ctx?: { req: http.IncomingMessage; res: http.ServerResponse }) => any;
   cors?: Cors;
   httpType?: 'http' | 'https' | 'http2';
   httpsKey?: string;
@@ -222,7 +222,17 @@ export class Server {
     } else {
       this._server.on('request', listener);
     }
-    this._server.on('request', this._callback || this.createCallback());
+    const callbackListener = this._callback || this.createCallback();
+    this._server.on('request', callbackListener);
+    return () => {
+      if (Array.isArray(listener)) {
+        listener.forEach((l) => this._server.removeListener('request', l as Listener));
+      } else {
+        this._server.removeListener('request', listener as Listener);
+      }
+      this.hasOn = false;
+      this._server.removeListener('request', callbackListener);
+    }
   }
   get callback() {
     return this._callback || this.createCallback();
