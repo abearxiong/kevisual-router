@@ -115,7 +115,6 @@ export class Route<U = { [key: string]: any }> {
    */
   key?: string;
   id?: string;
-  share? = false;
   run?: Run;
   nextRoute?: NextRoute; // route to run after this route
   description?: string;
@@ -587,9 +586,7 @@ export class QueryRouter {
     ctx.query = { ...ctx.query, ...query, ...payload };
     ctx.state = { ...ctx?.state };
     ctx.throw = this.throw;
-    // put queryRouter to ctx
-    // TODO: 是否需要queryRouter，函数内部处理router路由执行，这应该是避免去内部去包含的功能过
-    ctx.queryRouter = this;
+    ctx.app = this;
     ctx.call = this.call.bind(this);
     ctx.queryRoute = this.queryRoute.bind(this);
     ctx.index = 0;
@@ -610,7 +607,10 @@ export class QueryRouter {
   async call(message: { id?: string; path?: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
     let path = message.path;
     let key = message.key;
-    if (message.id) {
+    // 优先 path + key
+    if (path) {
+      return await this.parse({ ...message, path, key }, { ...this.context, ...ctx });
+    } else if (message.id) {
       const route = this.routes.find((r) => r.id === message.id);
       if (route) {
         path = route.path;
@@ -618,8 +618,6 @@ export class QueryRouter {
       } else {
         return { code: 404, body: null, message: 'Not found route' };
       }
-      return await this.parse({ ...message, path, key }, { ...this.context, ...ctx });
-    } else if (path) {
       return await this.parse({ ...message, path, key }, { ...this.context, ...ctx });
     } else {
       return { code: 404, body: null, message: 'Not found path' };
@@ -633,7 +631,7 @@ export class QueryRouter {
    * @returns
    */
   async queryRoute(message: { id?: string; path: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
-    const res = await this.parse(message, { ...this.context, ...ctx });
+    const res = await this.call(message, { ...this.context, ...ctx });
     return {
       code: res.code,
       data: res.body,

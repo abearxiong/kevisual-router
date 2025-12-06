@@ -122,17 +122,33 @@ type HttpChainOpts = {
   req?: Req;
   res?: ServerResponse;
   simpleRouter?: SimpleRouter;
+  server?: Server;
 };
+
+/**
+ * HttpChain 类, 用于链式调用,router.get内部使用
+ */
+
 export class HttpChain {
+  /**
+   * 请求对象, 每一次请求都是不一样的
+   */
   req: Req;
+  /**
+   * 响应对象, 每一次请求响应都是不一样的
+   */
   res: ServerResponse;
   simpleRouter: SimpleRouter;
   server: Server;
   hasSetHeader: boolean = false;
   isSseSet: boolean = false;
   constructor(opts?: HttpChainOpts) {
-    this.req = opts?.req;
-    this.res = opts?.res;
+    if (opts?.res) {
+      this.res = opts.res;
+    }
+    if (opts?.req) {
+      this.req = opts.req;
+    }
     this.simpleRouter = opts?.simpleRouter;
   }
   setReq(req: Req) {
@@ -200,7 +216,13 @@ export class HttpChain {
     this.server.listen(opts, callback);
     return this;
   }
-  parse() {
+  /**
+   * 外部 parse 方法
+   * @returns 
+   */
+  parse(opts?: { listenOptions?: ListenOptions, listenCallBack?: () => void }) {
+    const { listenOptions, listenCallBack } = opts || {};
+
     if (!this.server || !this.simpleRouter) {
       throw new Error('Server and SimpleRouter must be set before calling parse');
     }
@@ -216,6 +238,9 @@ export class HttpChain {
         }
       }
     };
+    if (listenOptions) {
+      this.server.listen(listenOptions, listenCallBack);
+    }
     this.server.on('request', listener);
     return () => {
       that.server.removeListener('request', listener);
