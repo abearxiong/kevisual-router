@@ -655,13 +655,13 @@ export class QueryRouterServer extends QueryRouter {
    * @param param0
    * @returns
    */
-  async run({ path, key, payload }: { path: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
+  async run(msg:  { id?: string; path?: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
     const handle = this.handle;
     if (handle) {
-      const result = await this.call({ path, key, payload }, ctx);
+      const result = await this.call(msg, ctx);
       return handle(result);
     }
-    return super.run({ path, key, payload }, ctx);
+    return super.run(msg, ctx);
   }
 }
 

@@ -107,8 +107,8 @@ export class App<U = {}> {
   async queryRoute(path: string, key?: string, payload?: any, ctx?: AppRouteContext<U> & { [key: string]: any }) {
     return await this.router.queryRoute({ path, key, payload }, ctx);
   }
-  async run(path: string, key?: string, payload?: any, ctx?: AppRouteContext<U> & { [key: string]: any }) {
-    return await this.router.run({ path, key, payload }, ctx);
+  async run(msg: { id?: string, path?: string; key?: string; payload?: any }, ctx?: AppRouteContext<U> & { [key: string]: any }) {
+    return await this.router.run(msg, ctx);
   }
   exportRoutes() {
     return this.router.exportRoutes();
