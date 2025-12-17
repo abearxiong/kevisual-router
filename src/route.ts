@@ -63,14 +63,14 @@ export type RouteMiddleware =
     id?: string;
   }
   | string;
-export type RouteOpts<T = {}> = {
+export type RouteOpts<U = {}, T = SimpleObject> = {
   path?: string;
   key?: string;
   id?: string;
-  run?: Run<T>;
+  run?: Run<U>;
   nextRoute?: NextRoute; // route to run after this route
   description?: string;
-  metadata?: { [key: string]: any };
+  metadata?: T;
   middleware?: RouteMiddleware[]; // middleware
   type?: 'route' | 'middleware';
   /**
@@ -86,7 +86,7 @@ export type RouteOpts<T = {}> = {
 export type DefineRouteOpts = Omit<RouteOpts, 'idUsePath' | 'nextRoute'>;
 const pickValue = ['path', 'key', 'id', 'description', 'type', 'middleware', 'metadata'] as const;
 export type RouteInfo = Pick<Route, (typeof pickValue)[number]>;
-export class Route<U = { [key: string]: any }> {
+export class Route<U = { [key: string]: any }, T extends SimpleObject =SimpleObject> {
   /**
    * 一级路径
    */
@@ -99,7 +99,7 @@ export class Route<U = { [key: string]: any }> {
   run?: Run;
   nextRoute?: NextRoute; // route to run after this route
   description?: string;
-  metadata?: { [key: string]: any };
+  metadata?: T;
   middleware?: RouteMiddleware[]; // middleware
   type? = 'route';
   data?: any;
@@ -124,7 +124,7 @@ export class Route<U = { [key: string]: any }> {
       this.run = opts.run;
       this.nextRoute = opts.nextRoute;
       this.description = opts.description;
-      this.metadata = opts.metadata;
+      this.metadata = opts.metadata as T;
       this.type = opts.type || 'route';
       this.middleware = opts.middleware || [];
       this.key = opts.key || key;
@@ -511,8 +511,8 @@ export class QueryRouter {
   setContext(ctx: RouteContext) {
     this.context = ctx;
   }
-  getList(): RouteInfo[] {
-    return this.routes.map((r) => {
+  getList(filter?: (route: Route) => boolean): RouteInfo[] {
+    return this.routes.filter(filter || (() => true)).map((r) => {
       return pick(r, pickValue as any);
     });
   }
@@ -655,7 +655,7 @@ export class QueryRouterServer extends QueryRouter {
    * @param param0
    * @returns
    */
-  async run(msg:  { id?: string; path?: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
+  async run(msg: { id?: string; path?: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
     const handle = this.handle;
     if (handle) {
       const result = await this.call(msg, ctx);
