@@ -40,11 +40,8 @@ export class CustomError extends Error {
    * @param err
    * @returns
    */
-  static isError(err: any) {
-    if (err instanceof CustomError || err?.code) {
-      return true;
-    }
-    return false;
+  static isError(error: unknown): error is CustomError {
+    return error instanceof CustomError || (typeof error === 'object' && error !== null && 'code' in error);
   }
   parse(e?: CustomError) {
     if (e) {

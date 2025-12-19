@@ -3,7 +3,7 @@ import http from 'node:http';
 import https from 'node:https';
 import http2 from 'node:http2';
 import { handleServer } from './handle-server.ts';
-import * as cookie from 'cookie';
+import * as cookie from './cookie.ts';
 export type Listener = (...args: any[]) => void;
 
 type CookieFn = (name: string, value: string, options?: cookie.SerializeOptions, end?: boolean) => void;

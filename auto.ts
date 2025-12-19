@@ -8,7 +8,6 @@ export const App = QueryRouterServer;
 
 export { createSchema } from './src/validator/index.ts';
 export type { Rule } from './src/validator/rule.ts';
-export type { Schema } from 'zod';
 export type { RouteContext, RouteOpts } from './src/route.ts';
 
 export type { Run } from './src/route.ts';
