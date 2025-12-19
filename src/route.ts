@@ -86,7 +86,7 @@ export type RouteOpts<U = {}, T = SimpleObject> = {
 export type DefineRouteOpts = Omit<RouteOpts, 'idUsePath' | 'nextRoute'>;
 const pickValue = ['path', 'key', 'id', 'description', 'type', 'middleware', 'metadata'] as const;
 export type RouteInfo = Pick<Route, (typeof pickValue)[number]>;
-export class Route<U = { [key: string]: any }, T extends SimpleObject =SimpleObject> {
+export class Route<U = { [key: string]: any }, T extends SimpleObject = SimpleObject> {
   /**
    * 一级路径
    */
@@ -658,8 +658,7 @@ export class QueryRouterServer extends QueryRouter {
   async run(msg: { id?: string; path?: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
     const handle = this.handle;
     if (handle) {
-      const result = await this.call(msg, ctx);
-      return handle(result);
+      return handle(msg, ctx);
     }
     return super.run(msg, ctx);
   }
