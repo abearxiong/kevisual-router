@@ -1,39 +1,38 @@
 // @ts-type=ws
 import { WebSocketServer } from 'ws';
 import type { WebSocket } from 'ws';
-import { Server } from './server.ts';
+import { ServerType } from './server-type.ts'
 import { parseIfJson } from '../utils/parse.ts';
+import { isBun } from '../utils/is-engine.ts';
 
 
-export const createWsServer = (server: Server) => {
+export const createWsServer = (server: ServerType) => {
   // 将 WebSocket 服务器附加到 HTTP 服务器
   const wss = new WebSocketServer({ server: server.server as any });
   return wss;
 };
 type WsServerBaseOpts = {
-  wss?: WebSocketServer;
+  wss?: WebSocketServer | null;
   path?: string;
 };
 export type ListenerFn = (message: { data: Record<string, any>; ws: WebSocket; end: (data: any) => any }) => Promise<any>;
 export type Listener<T = 'router' | 'chat' | 'ai'> = {
   type: T;
+  path?: string;
   listener: ListenerFn;
 };
 
 export class WsServerBase {
-  wss: WebSocketServer;
-  path: string;
-  listeners: { type: string; listener: ListenerFn }[] = [];
+  wss: WebSocketServer | null;
+  listeners: Listener[] = [];
   listening: boolean = false;
+  server: ServerType;
+
   constructor(opts: WsServerBaseOpts) {
     this.wss = opts.wss;
-    if (!this.wss) {
+    if (!this.wss && !isBun) {
       throw new Error('wss is required');
     }
-    this.path = opts.path || '';
-  }
-  setPath(path: string) {
-    this.path = path;
   }
   listen() {
     if (this.listening) {
@@ -42,116 +41,49 @@ export class WsServerBase {
     }
     this.listening = true;
 
-    this.wss.on('connection', (ws) => {
-      ws.on('message', async (message: string | Buffer) => {
-        const data = parseIfJson(message);
-        if (typeof data === 'string') {
-          const cleanMessage = data.trim().replace(/^["']|["']$/g, '');
-          ws.emit('string', cleanMessage);
-          return;
-        }
-        const { type, data: typeData, ...rest } = data;
-        if (!type) {
-          ws.send(JSON.stringify({ code: 500, message: 'type is required' }));
-        }
-        const listeners = this.listeners.find((item) => item.type === type);
-        const res = {
-          type,
-          data: {} as any,
-          ...rest,
-        };
-        const end = (data: any, all?: Record<string, any>) => {
-          const result = {
-            ...res,
-            data,
-            ...all,
-          };
-          ws.send(JSON.stringify(result));
-        };
+    if (!this.wss) {
+      // Bun 环境下，wss 可能为 null
+      return;
+    }
 
-        if (!listeners) {
-          const data = { code: 500, message: `${type} server is error` };
-          end(data);
-          return;
-        }
-        listeners.listener({
-          data: typeData,
-          ws,
-          end: end,
-        });
-      });
-      ws.on('string', (message: string) => {
-        if (message === 'close') {
-          ws.close();
-        }
-        if (message == 'ping') {
-          ws.send('pong');
-        }
+    this.wss.on('connection', (ws, req) => {
+      const url = new URL(req.url, 'http://localhost');
+      const pathname = url.pathname;
+      const token = url.searchParams.get('token') || '';
+      const id = url.searchParams.get('id') || '';
+      ws.on('message', async (message: string | Buffer) => {
+        await this.server.onWebSocket({ ws, message, pathname, token, id });
       });
       ws.send('connected');
     });
   }
-  addListener(type: string, listener: ListenerFn) {
-    if (!type || !listener) {
-      throw new Error('type and listener is required');
-    }
-    const find = this.listeners.find((item) => item.type === type);
-    if (find) {
-      this.listeners = this.listeners.filter((item) => item.type !== type);
-    }
-    this.listeners.push({ type, listener });
-  }
-  removeListener(type: string) {
-    this.listeners = this.listeners.filter((item) => item.type !== type);
-  }
 }
 // TODO: ws handle and path and routerContext
 export class WsServer extends WsServerBase {
-  server: Server;
-  constructor(server: Server, opts?: any) {
-    const wss = new WebSocketServer({ noServer: true });
-    const path = server.path;
+  constructor(server: ServerType) {
+    const wss = isBun ? null : new WebSocketServer({ noServer: true });
     super({ wss });
     this.server = server;
-    this.setPath(opts?.path || path);
-    this.initListener();
-  }
-  initListener() {
-    const server = this.server;
-    const listener: Listener = {
-      type: 'router',
-      listener: async ({ data, ws, end }) => {
-        if (!server) {
-          end({ code: 500, message: 'server handle is error' });
-          return;
-        }
-        const handle = this.server.handle;
-        try {
-          const result = await handle(data as any);
-          end(result);
-        } catch (e) {
-          if (e.code && typeof e.code === 'number') {
-            end({
-              code: e.code,
-              message: e.message,
-            });
-          } else {
-            end({ code: 500, message: 'Router Server error' });
-          }
-        }
-      },
-    };
-    this.addListener(listener.type, listener.listener);
   }
   listen() {
+    if (isBun) {
+      // Bun 的 WebSocket 在 Bun.serve 中处理，这里不需要额外操作
+      // WebSocket 升级会在 listenWithBun 中处理
+      this.listening = true;
+      return;
+    }
     super.listen();
     const server = this.server;
     const wss = this.wss;
+
     // HTTP 服务器的 upgrade 事件
+    // @ts-ignore
     server.server.on('upgrade', (req, socket, head) => {
-      if (req.url === this.path) {
+      const url = new URL(req.url, 'http://localhost');
+      const listenPath = this.server.listeners.map((item) => item.path).filter((item) => item);
+      if (listenPath.includes(url.pathname) || url.pathname === this.server.path) {
         wss.handleUpgrade(req, socket, head, (ws) => {
-          // 这里手动触发 connection 事件
+          // 这里手动触发 connection事件
           // @ts-ignore
           wss.emit('connection', ws, req);
         });

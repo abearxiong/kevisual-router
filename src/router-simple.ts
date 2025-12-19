@@ -62,6 +62,7 @@ export class SimpleRouter {
   }
   isSse(req: Req) {
     const { headers } = req;
+    if (!headers) return false;
     if (headers['accept'] && headers['accept'].includes('text/event-stream')) {
       return true;
     }

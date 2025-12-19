@@ -1,7 +1,7 @@
 // import { Server } from 'node:http';
-import { Server } from '../server/server.ts'
+import { ServerNode } from '../server/server.ts'
 
-const server = new Server({
+const server = new ServerNode({
   path: '/',
   handle: async (data, ctx) => {
     console.log('ctx', ctx.req.url)

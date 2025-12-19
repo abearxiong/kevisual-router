@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { parseBody } from './parse-body.ts';
 import url from 'node:url';
-import { createHandleCtx } from './server.ts';
+import { createHandleCtx } from './server-base.ts';
 
 /**
  * get params and body

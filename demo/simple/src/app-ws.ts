@@ -1,6 +1,6 @@
-import { Route, App } from '@kevisual/router';
+import { Route, App } from '@kevisual/router/src/app.ts';
 
-const app = new App({ io: true });
+const app = new App({ serverOptions: { io: true } });
 app.listen(4002);
 const route01 = new Route('demo', '01');
 route01.run = async (ctx) => {
@@ -25,3 +25,14 @@ app.addRoute(route02);
 
 console.log(`http://localhost:4002/api/router?path=demo&key=02`);
 console.log(`http://localhost:4002/api/router?path=demo&key=01`);
+
+app.server.on({
+  id: 'abc',
+  path: '/ws',
+  io: true,
+  fun: async ({ data }, { end }) => {
+    console.log('Custom middleware for /ws');
+    console.log('Data received:', data);
+    end({ message: 'Hello from /ws middleware' });
+  }
+})

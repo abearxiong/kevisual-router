@@ -1,7 +1,49 @@
 import type { IncomingMessage } from 'node:http';
 import url from 'node:url';
-
+import { isBun } from '../utils/is-engine.ts';
 export const parseBody = async <T = Record<string, any>>(req: IncomingMessage) => {
+  const resolveBody = (body: string) => {
+    // 获取 Content-Type 头信息
+    const contentType = req.headers['content-type'] || '';
+    const resolve = (data: T) => {
+      return data;
+    }
+    // 处理 application/json
+    if (contentType.includes('application/json')) {
+      return resolve(JSON.parse(body) as T);
+    }
+    // 处理 application/x-www-form-urlencoded
+    if (contentType.includes('application/x-www-form-urlencoded')) {
+      const formData = new URLSearchParams(body);
+      const result: Record<string, any> = {};
+
+      formData.forEach((value, key) => {
+        // 尝试将值解析为 JSON，如果失败则保留原始字符串
+        try {
+          result[key] = JSON.parse(value);
+        } catch {
+          result[key] = value;
+        }
+      });
+
+      return resolve(result as T);
+    }
+
+    // 默认尝试 JSON 解析
+    try {
+      return resolve(JSON.parse(body) as T);
+    } catch {
+      return resolve({} as T);
+    }
+  }
+  if (isBun) {
+    // @ts-ignore
+    const body = req.body;
+    if (body) {
+      return resolveBody(body)
+    }
+    return {} as T;
+  }
   return new Promise<T>((resolve, reject) => {
     const arr: any[] = [];
     req.on('data', (chunk) => {
@@ -10,39 +52,8 @@ export const parseBody = async <T = Record<string, any>>(req: IncomingMessage) =
     req.on('end', () => {
       try {
         const body = Buffer.concat(arr).toString();
+        resolve(resolveBody(body));
 
-        // 获取 Content-Type 头信息
-        const contentType = req.headers['content-type'] || '';
-
-        // 处理 application/json
-        if (contentType.includes('application/json')) {
-          resolve(JSON.parse(body) as T);
-          return;
-        }
-        // 处理 application/x-www-form-urlencoded
-        if (contentType.includes('application/x-www-form-urlencoded')) {
-          const formData = new URLSearchParams(body);
-          const result: Record<string, any> = {};
-
-          formData.forEach((value, key) => {
-            // 尝试将值解析为 JSON，如果失败则保留原始字符串
-            try {
-              result[key] = JSON.parse(value);
-            } catch {
-              result[key] = value;
-            }
-          });
-
-          resolve(result as T);
-          return;
-        }
-
-        // 默认尝试 JSON 解析
-        try {
-          resolve(JSON.parse(body) as T);
-        } catch {
-          resolve({} as T);
-        }
       } catch (e) {
         resolve({} as T);
       }

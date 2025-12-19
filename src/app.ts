@@ -1,20 +1,21 @@
 import { QueryRouter, Route, RouteContext, RouteOpts } from './route.ts';
-import { Server, ServerOpts, HandleCtx } from './server/server.ts';
-import { WsServer } from './server/ws-server.ts';
+import { ServerNode, ServerNodeOpts } from './server/server.ts';
+import { HandleCtx } from './server/server-base.ts';
+import { ServerType } from './server/server-type.ts';
 import { CustomError } from './result/error.ts';
 import { handleServer } from './server/handle-server.ts';
 import { IncomingMessage, ServerResponse } from 'http';
+import { isBun } from './utils/is-engine.ts';
+import { BunServer } from './server/server-bun.ts';
 
 type RouterHandle = (msg: { path: string;[key: string]: any }) => { code: string; data?: any; message?: string;[key: string]: any };
 type AppOptions<T = {}> = {
   router?: QueryRouter;
-  server?: Server;
+  server?: ServerType;
   /** handle msg 关联 */
   routerHandle?: RouterHandle;
   routerContext?: RouteContext<T>;
-  serverOptions?: ServerOpts;
-  io?: boolean;
-  ioOpts?: { routerHandle?: RouterHandle; routerContext?: RouteContext<T>; path?: string };
+  serverOptions?: ServerNodeOpts;
 };
 
 export type AppRouteContext<T = {}> = HandleCtx & RouteContext<T> & { app: App<T> };
@@ -25,18 +26,22 @@ export type AppRouteContext<T = {}> = HandleCtx & RouteContext<T> & { app: App<T
  */
 export class App<U = {}> {
   router: QueryRouter;
-  server: Server;
-  io: WsServer;
+  server: ServerType;
   constructor(opts?: AppOptions<U>) {
     const router = opts?.router || new QueryRouter();
-    const server = opts?.server || new Server(opts?.serverOptions || {});
+    let server = opts?.server;
+    if (!server) {
+      const serverOptions = opts?.serverOptions || {};
+      if (!isBun) {
+        server = new ServerNode(serverOptions)
+      } else {
+        server = new BunServer(serverOptions)
+      }
+    }
     server.setHandle(router.getHandle(router, opts?.routerHandle, opts?.routerContext));
     router.setContext({ needSerialize: true, ...opts?.routerContext });
     this.router = router;
     this.server = server;
-    if (opts?.io) {
-      this.io = new WsServer(server, opts?.ioOpts);
-    }
   }
   listen(port: number, hostname?: string, backlog?: number, listeningListener?: () => void): void;
   listen(port: number, hostname?: string, listeningListener?: () => void): void;
@@ -49,9 +54,6 @@ export class App<U = {}> {
   listen(...args: any[]) {
     // @ts-ignore
     this.server.listen(...args);
-    if (this.io) {
-      this.io.listen();
-    }
   }
   use(path: string, fn: (ctx: any) => any, opts?: RouteOpts) {
     const route = new Route(path, '', opts);
@@ -130,7 +132,10 @@ export class App<U = {}> {
     if (!this.server) {
       throw new Error('Server is not initialized');
     }
-    this.server.on(fn);
+    this.server.on({
+      id: 'app-request-listener',
+      fun: fn
+    });
   }
 }
 

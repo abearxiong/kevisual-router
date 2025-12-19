@@ -13,7 +13,9 @@
 
   <script>
     // const ws = new WebSocket('ws://localhost:4002/api/router');
-    const ws = new WebSocket('ws://192.168.31.220:4002/api/router');
+    const ws = new WebSocket('ws://localhost:4002/api/router');
+    // const ws = new WebSocket('ws://localhost:4002/ws');
+    // const ws = new WebSocket('ws://192.168.31.220:4002/api/router');
 
     // 当连接成功时
     ws.onopen = () => {
@@ -24,12 +26,14 @@
       // ws.send(message);
       const message = JSON.stringify({
         type: 'router',
+        id: '123556',
         data: {
           path: 'demo',
           key: '01',
         }
       });
       ws.send(message);
+      // ws.send(JSON.stringify('Hello Server!'));
     };
 
     // 接收服务器的消息
@@ -67,6 +71,9 @@
     // 处理 WebSocket 关闭
     ws.onclose = () => {
       console.log('Disconnected from WebSocket server');
+    };
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
     };
   </script>
 </body>
