@@ -24,7 +24,6 @@ export type Listener<T = 'router' | 'chat' | 'ai'> = {
 
 export class WsServerBase {
   wss: WebSocketServer | null;
-  listeners: Listener[] = [];
   listening: boolean = false;
   server: ServerType;
 
@@ -51,11 +50,22 @@ export class WsServerBase {
       const pathname = url.pathname;
       const token = url.searchParams.get('token') || '';
       const id = url.searchParams.get('id') || '';
+      // @ts-ignore
+      ws.data = {
+        url: url,
+        pathname,
+        token,
+        id,
+      }
       ws.on('message', async (message: string | Buffer) => {
         await this.server.onWebSocket({ ws, message, pathname, token, id });
       });
-      ws.send('connected');
+      ws.send(JSON.stringify({ type: 'connected' }));
+      this.wss.on('close', () => {
+        this.server.onWsClose(ws);
+      });
     });
+
   }
 }
 // TODO: ws handle and path and routerContext

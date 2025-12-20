@@ -223,7 +223,7 @@ export class BunServer extends ServerBase implements ServerType {
       },
       websocket: {
         open: (ws: any) => {
-          ws.send('connected');
+          ws.send(JSON.stringify({ type: 'connected' }));
         },
         message: async (ws: any, message: string | Buffer) => {
           const pathname = ws.data.pathname || '';
@@ -233,6 +233,7 @@ export class BunServer extends ServerBase implements ServerType {
         },
         close: (ws: any) => {
           // WebSocket 连接关闭
+          this.onWsClose(ws);
         },
       },
     });

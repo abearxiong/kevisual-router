@@ -20,4 +20,15 @@ export { App } from './app.ts';
 export * from './router-define.ts';
 
 
-export { RouterReq, RouterRes } from './server/server-type.ts';
+export {
+  RouterReq,
+  RouterRes,
+  OnWebSocketFn,
+  WS,
+  WebSocketReq,
+  WebSocketRes,
+  Listener,
+  WebSocketListenerFun,
+  HttpListenerFun,
+  OnListener,
+} from './server/server-type.ts';

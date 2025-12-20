@@ -1,13 +1,7 @@
-import * as http from 'http';
+import EventEmitter from 'node:events';
+import * as http from 'node:http';
 
-export type Listener = {
-  id?: string;
-  io?: boolean;
-  path?: string;
-  fun: (...args: any[]) => Promise<void> | void;
-}
-export type ListenerFun = (...args: any[]) => Promise<void> | void;
-export type OnListener = Listener | ListenerFun | (Listener | ListenerFun)[];
+
 export type Cors = {
   /**
    * @default '*''
@@ -44,14 +38,49 @@ export interface ServerType {
    * @param listener
    */
   on(listener: OnListener): void;
-  onWebSocket({ ws, message, pathname, token, id }: { ws: WS; message: string | Buffer; pathname: string, token?: string, id?: string }): void;
+  onWebSocket({ ws, message, pathname, token, id }: OnWebSocketOptions): void;
+  onWsClose(ws: WS): void;
 }
 
-type WS = {
+export type OnWebSocketOptions = { ws: WS; message: string | Buffer; pathname: string, token?: string, id?: string }
+export type OnWebSocketFn = (options: OnWebSocketOptions) => Promise<void> | void;
+export type WS = {
   send: (data: any) => void;
-  close: () => void;
+  close: (code?: number, reason?: string) => void;
+  data?: {
+    url: URL;
+    pathname: string;
+    token?: string;
+    id?: string;
+    /**
+     * 鉴权后的获取的信息
+     */
+    userApp?: string;
+  }
+}
+export type Listener = {
+  id?: string;
+  io?: boolean;
+  path?: string;
+  func: WebSocketListenerFun | HttpListenerFun;
 }
 
+export type WebSocketListenerFun = (req: WebSocketReq, res: WebSocketRes) => Promise<void> | void;
+export type HttpListenerFun = (req: RouterReq, res: RouterRes) => Promise<void> | void;
+
+export type WebSocketReq = {
+  emitter?: EventEmitter;
+  ws: WS;
+  data: any;
+  pathname?: string;
+  token?: string;
+  id?: string;
+}
+export type WebSocketRes = {
+  end: (data: any) => void;
+}
+export type ListenerFun = WebSocketListenerFun | HttpListenerFun;;
+export type OnListener = Listener | ListenerFun | (Listener | ListenerFun)[];
 export type RouterReq<T = {}> = {
   url: string;
   method: string;

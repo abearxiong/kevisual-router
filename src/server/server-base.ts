@@ -1,9 +1,9 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { handleServer } from './handle-server.ts';
 import * as cookie from './cookie.ts';
-import { ServerType, Listener, OnListener, ServerOpts } from './server-type.ts';
+import { ServerType, Listener, OnListener, ServerOpts, OnWebSocketOptions, OnWebSocketFn, WebScoketListenerFun, ListenerFun, HttpListenerFun, WS } from './server-type.ts';
 import { parseIfJson } from '../utils/parse.ts';
-
+import { EventEmitter } from 'events';
 type CookieFn = (name: string, value: string, options?: cookie.SerializeOptions, end?: boolean) => void;
 
 export type HandleCtx = {
@@ -63,6 +63,7 @@ export class ServerBase implements ServerType {
   _callback: any;
   cors: Cors;
   listeners: Listener[] = [];
+  emitter = new EventEmitter();
   constructor(opts?: ServerOpts) {
     this.path = opts?.path || '/api/router';
     this.handle = opts?.handle;
@@ -118,9 +119,9 @@ export class ServerBase implements ServerType {
       }
       const listeners = that.listeners || [];
       for (const item of listeners) {
-        const fun = item.fun;
-        if (typeof fun === 'function' && !item.io) {
-          await fun(req, res);
+        const func = item.func as any;
+        if (typeof func === 'function' && !item.io) {
+          await func(req, res);
         }
       }
       if (res.headersSent) {
@@ -178,13 +179,13 @@ export class ServerBase implements ServerType {
   on(listener: OnListener) {
     this.listeners = [];
     if (typeof listener === 'function') {
-      this.listeners.push({ fun: listener });
+      this.listeners.push({ func: listener });
       return;
     }
     if (Array.isArray(listener)) {
       for (const item of listener) {
         if (typeof item === 'function') {
-          this.listeners.push({ fun: item });
+          this.listeners.push({ func: item });
         } else {
           this.listeners.push(item);
         }
@@ -193,7 +194,7 @@ export class ServerBase implements ServerType {
       this.listeners.push(listener);
     }
   }
-  async onWebSocket({ ws, message, pathname, token, id }) {
+  async onWebSocket({ ws, message, pathname, token, id }: OnWebSocketOptions) {
     const listener = this.listeners.find((item) => item.path === pathname && item.io);
     const data: any = parseIfJson(message);
 
@@ -201,7 +202,8 @@ export class ServerBase implements ServerType {
       const end = (data: any) => {
         ws.send(JSON.stringify(data));
       }
-      listener.fun({
+      (listener.func as WebScoketListenerFun)({
+        emitter: this.emitter,
         data,
         token,
         id,
@@ -260,6 +262,17 @@ export class ServerBase implements ServerType {
       }
     } else {
       end({ code: 500, message: `${type} server is error` });
+    }
+  }
+  async onWsClose(ws: WS) {
+    const id = ws?.data?.id || '';
+    if (id) {
+      this.emitter.emit('close--' + id, { type: 'close', ws, id });
+      setTimeout(() => {
+        // 关闭后 5 秒清理监听器, 避免内存泄漏， 理论上原本的自己就应该被清理掉了，这里是保险起见
+        this.emitter.removeAllListeners('close--' + id);
+        this.emitter.removeAllListeners(id);
+      }, 5000);
     }
   }
 }
