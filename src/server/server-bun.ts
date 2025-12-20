@@ -71,7 +71,7 @@ export class BunServer extends ServerBase implements ServerType {
         }
 
         // 将 Bun 的 Request 转换为 Node.js 风格的 req/res
-        return new Promise((resolve) => {
+        return new Promise(async (resolve) => {
           const req: RouterReq = {
             url: url.pathname + url.search,
             method: request.method,
@@ -80,6 +80,11 @@ export class BunServer extends ServerBase implements ServerType {
               // @ts-ignore
               remoteAddress: request?.remoteAddress || request?.ip || clientInfo?.address || '',
               remotePort: clientInfo?.port || 0,
+            },
+            // @ts-ignore
+            bun: {
+              request, // 原始请求对象
+              server,  // 原始服务器对象
             }
           };
 
@@ -212,10 +217,25 @@ export class BunServer extends ServerBase implements ServerType {
           };
           // 处理请求体
           if (request.method !== 'GET' && request.method !== 'HEAD') {
-            request.text().then((body) => {
-              (req as any).body = body;
+            const contentType = request.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+              const text = await request.text();
+              req.body = text;
               requestCallback(req, res);
-            });
+              return;
+            } else if (contentType.includes('application/x-www-form-urlencoded')) {
+              const formData = await request.formData();
+              const body: Record<string, any> = {};
+              for (const [key, value] of formData.entries()) {
+                body[key] = value;
+              }
+              req.body = JSON.stringify(body);
+              requestCallback(req, res);
+              return;
+            } else {
+              requestCallback(req, res);
+              return;
+            }
           } else {
             requestCallback(req, res);
           }

@@ -91,6 +91,7 @@ export type RouterReq<T = {}> = {
     remoteAddress?: string;
     remotePort?: number;
   };
+  body?: string;
   cookies?: Record<string, string>;
 } & T;
 
