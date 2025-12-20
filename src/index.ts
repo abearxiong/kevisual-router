@@ -18,3 +18,6 @@ export type { Rule, Schema, } from './validator/index.ts';
 export { App } from './app.ts';
 
 export * from './router-define.ts';
+
+
+export { RouterReq, RouterRes } from './server/server-type.ts';

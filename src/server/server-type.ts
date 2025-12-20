@@ -7,7 +7,7 @@ export type Listener = {
   fun: (...args: any[]) => Promise<void> | void;
 }
 export type ListenerFun = (...args: any[]) => Promise<void> | void;
-export type OnListener = Listener | Listener[] | ListenerFun | ListenerFun[];
+export type OnListener = Listener | ListenerFun | (Listener | ListenerFun)[];
 export type Cors = {
   /**
    * @default '*''
@@ -52,19 +52,27 @@ type WS = {
   close: () => void;
 }
 
-export type CommonReq = {
+export type RouterReq<T = {}> = {
   url: string;
   method: string;
   headers: Record<string, string>;
-  [key: string]: any;
-}
+  socket?: {
+    remoteAddress?: string;
+    remotePort?: number;
+  };
+  cookies?: Record<string, string>;
+} & T;
 
-export type CommonRes = {
+export type RouterRes<T = {}> = {
   statusCode: number;
+  headersSent: boolean;
+  _headers: Record<string, string | string[]>;
+  _bodyChunks: any[];
   writableEnded: boolean;
   writeHead: (statusCode: number, headers?: Record<string, string>) => void;
   setHeader: (name: string, value: string | string[]) => void;
   cookie: (name: string, value: string, options?: any) => void;
+  write: (chunk: any) => void;
+  pipe: (stream: any) => void;
   end: (data?: any) => void;
-  [key: string]: any;
-}
+} & T;

@@ -4,19 +4,8 @@
  * @tags bun, server, websocket, http
  * @createdAt 2025-12-20
  */
-import type { IncomingMessage, ServerResponse } from 'node:http';
-import { ServerType, type ServerOpts, type Cors, Listener } from './server-type.ts';
-import { handleServer } from './handle-server.ts';
+import { ServerType, type ServerOpts, type Cors, RouterRes, RouterReq } from './server-type.ts';
 import { ServerBase } from './server-base.ts';
-import { parseIfJson } from '../utils/parse.ts';
-
-const resultError = (error: string, code = 500) => {
-  const r = {
-    code: code,
-    message: error,
-  };
-  return JSON.stringify(r);
-};
 
 export class BunServer extends ServerBase implements ServerType {
   declare _server: any;
@@ -54,15 +43,16 @@ export class BunServer extends ServerBase implements ServerType {
       }
     }
 
-    const requestCallback = this.createCallback();
+    const requestCallback = this.createCallback() as unknown as (req: RouterReq, res: RouterRes) => void;
     const wsPath = this.path;
     // @ts-ignore
     this._server = Bun.serve({
       port,
       hostname,
       idleTimeout: 0, // 4 minutes idle timeout (max 255 seconds)
-      fetch: async (request: Request, server: any) => {
+      fetch: async (request: Bun.BunRequest, server: any) => {
         const host = request.headers.get('host') || 'localhost';
+        const clientInfo = server.requestIP(request); // 返回 { address: string, port: number } 或 null
         const url = new URL(request.url, `http://${host}`);
         // 处理 WebSocket 升级请求
         if (request.headers.get('upgrade') === 'websocket') {
@@ -82,17 +72,23 @@ export class BunServer extends ServerBase implements ServerType {
 
         // 将 Bun 的 Request 转换为 Node.js 风格的 req/res
         return new Promise((resolve) => {
-          const req: any = {
+          const req: RouterReq = {
             url: url.pathname + url.search,
             method: request.method,
             headers: Object.fromEntries(request.headers.entries()),
+            socket: {
+              // @ts-ignore
+              remoteAddress: request?.remoteAddress || request?.ip || clientInfo?.address || '',
+              remotePort: clientInfo?.port || 0,
+            }
           };
 
-          const res: any = {
+          const res: RouterRes = {
             statusCode: 200,
             headersSent: false,
             writableEnded: false,
             _headers: {} as Record<string, string | string[]>,
+            _bodyChunks: [] as any[],
             writeHead(statusCode: number, headers: Record<string, string | string[]>) {
               this.statusCode = statusCode;
               for (const key in headers) {
@@ -130,10 +126,84 @@ export class BunServer extends ServerBase implements ServerType {
               }
               this.setHeader('Set-Cookie', cookieString);
             },
+            write(chunk: any, encoding?: string | Function, callback?: Function) {
+              if (typeof encoding === 'function') {
+                callback = encoding;
+                encoding = 'utf8';
+              }
+              if (!this._bodyChunks) {
+                this._bodyChunks = [];
+              }
+              this._bodyChunks.push(chunk);
+              if (callback) callback();
+              return true;
+            },
+            pipe(stream: any) {
+              this.writableEnded = true;
+
+              // 如果是 ReadableStream，直接使用
+              if (stream instanceof ReadableStream) {
+                resolve(
+                  new Response(stream, {
+                    status: this.statusCode,
+                    headers: this._headers as any,
+                  })
+                );
+                return;
+              }
+
+              // 如果是 Node.js 流，转换为 ReadableStream
+              const readableStream = new ReadableStream({
+                start(controller) {
+                  stream.on('data', (chunk: any) => {
+                    controller.enqueue(chunk);
+                  });
+                  stream.on('end', () => {
+                    controller.close();
+                  });
+                  stream.on('error', (err: any) => {
+                    controller.error(err);
+                  });
+                },
+                cancel() {
+                  if (stream.destroy) {
+                    stream.destroy();
+                  }
+                }
+              });
+
+              resolve(
+                new Response(readableStream, {
+                  status: this.statusCode,
+                  headers: this._headers as any,
+                })
+              );
+            },
             end(data?: string) {
               this.writableEnded = true;
+
+              // 合并所有写入的数据块
+              let responseData: string | Buffer = data;
+              if (this._bodyChunks && this._bodyChunks.length > 0) {
+                if (data) this._bodyChunks.push(data);
+                // 处理 Buffer 和字符串混合的情况
+                const hasBuffer = this._bodyChunks.some(chunk => chunk instanceof Buffer || chunk instanceof Uint8Array);
+                if (hasBuffer) {
+                  // 如果有 Buffer，转换所有内容为 Buffer 后合并
+                  const buffers = this._bodyChunks.map(chunk => {
+                    if (chunk instanceof Buffer) return chunk;
+                    if (chunk instanceof Uint8Array) return Buffer.from(chunk);
+                    return Buffer.from(String(chunk));
+                  });
+                  responseData = Buffer.concat(buffers);
+                } else {
+                  // 纯字符串，直接拼接
+                  responseData = this._bodyChunks.map(chunk => String(chunk)).join('');
+                }
+              }
+
               resolve(
-                new Response(data, {
+                new Response(responseData as any, {
                   status: this.statusCode,
                   headers: this._headers as any,
                 })
