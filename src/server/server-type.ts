@@ -16,6 +16,7 @@ export type ServerOpts<T = {}> = {
   handle?: (msg?: { path: string; key?: string;[key: string]: any }, ctx?: { req: http.IncomingMessage; res: http.ServerResponse }) => any;
   cors?: Cors;
   io?: boolean;
+  showConnected?: boolean;
 } & T;
 
 export interface ServerType {
@@ -40,11 +41,12 @@ export interface ServerType {
   on(listener: OnListener): void;
   onWebSocket({ ws, message, pathname, token, id }: OnWebSocketOptions): void;
   onWsClose(ws: WS): void;
+  sendConnected(ws: WS): void;
 }
 
 export type OnWebSocketOptions = { ws: WS; message: string | Buffer; pathname: string, token?: string, id?: string }
 export type OnWebSocketFn = (options: OnWebSocketOptions) => Promise<void> | void;
-export type WS = {
+export type WS<T = {}> = {
   send: (data: any) => void;
   close: (code?: number, reason?: string) => void;
   data?: {
@@ -56,7 +58,7 @@ export type WS = {
      * 鉴权后的获取的信息
      */
     userApp?: string;
-  }
+  } & T;
 }
 export type Listener = {
   id?: string;

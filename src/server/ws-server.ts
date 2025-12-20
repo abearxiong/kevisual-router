@@ -60,7 +60,7 @@ export class WsServerBase {
       ws.on('message', async (message: string | Buffer) => {
         await this.server.onWebSocket({ ws, message, pathname, token, id });
       });
-      ws.send(JSON.stringify({ type: 'connected' }));
+      this.server.sendConnected(ws);
       this.wss.on('close', () => {
         this.server.onWsClose(ws);
       });

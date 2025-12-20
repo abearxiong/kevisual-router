@@ -223,7 +223,7 @@ export class BunServer extends ServerBase implements ServerType {
       },
       websocket: {
         open: (ws: any) => {
-          ws.send(JSON.stringify({ type: 'connected' }));
+          this.sendConnected(ws);
         },
         message: async (ws: any, message: string | Buffer) => {
           const pathname = ws.data.pathname || '';

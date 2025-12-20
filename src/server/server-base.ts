@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { handleServer } from './handle-server.ts';
 import * as cookie from './cookie.ts';
-import { ServerType, Listener, OnListener, ServerOpts, OnWebSocketOptions, OnWebSocketFn, WebScoketListenerFun, ListenerFun, HttpListenerFun, WS } from './server-type.ts';
+import { ServerType, Listener, OnListener, ServerOpts, OnWebSocketOptions, OnWebSocketFn, WebSocketListenerFun, ListenerFun, HttpListenerFun, WS } from './server-type.ts';
 import { parseIfJson } from '../utils/parse.ts';
 import { EventEmitter } from 'events';
 type CookieFn = (name: string, value: string, options?: cookie.SerializeOptions, end?: boolean) => void;
@@ -64,11 +64,12 @@ export class ServerBase implements ServerType {
   cors: Cors;
   listeners: Listener[] = [];
   emitter = new EventEmitter();
+  showConnected = true;
   constructor(opts?: ServerOpts) {
     this.path = opts?.path || '/api/router';
     this.handle = opts?.handle;
     this.cors = opts?.cors;
-
+    this.showConnected = opts?.showConnected !== false;
   }
   listen(port: number, hostname?: string, backlog?: number, listeningListener?: () => void): void;
   listen(port: number, hostname?: string, listeningListener?: () => void): void;
@@ -202,7 +203,7 @@ export class ServerBase implements ServerType {
       const end = (data: any) => {
         ws.send(JSON.stringify(data));
       }
-      (listener.func as WebScoketListenerFun)({
+      (listener.func as WebSocketListenerFun)({
         emitter: this.emitter,
         data,
         token,
@@ -274,5 +275,9 @@ export class ServerBase implements ServerType {
         this.emitter.removeAllListeners(id);
       }, 5000);
     }
+  }
+  async sendConnected(ws: WS) {
+    if (this.showConnected)
+      ws.send(JSON.stringify({ type: 'connected' }));
   }
 }
