@@ -40,11 +40,17 @@ export interface ServerType {
    */
   on(listener: OnListener): void;
   onWebSocket({ ws, message, pathname, token, id }: OnWebSocketOptions): void;
-  onWsClose(ws: WS): void;
-  sendConnected(ws: WS): void;
+  onWsClose<T = {}>(ws: WS<T>): void;
+  sendConnected<T = {}>(ws: WS<T>): void;
 }
 
-export type OnWebSocketOptions = { ws: WS; message: string | Buffer; pathname: string, token?: string, id?: string }
+export type OnWebSocketOptions<T = {}> = {
+  ws: WS<T>;
+  message: string | Buffer;
+  pathname: string,
+  token?: string,
+  id?: string,
+}
 export type OnWebSocketFn = (options: OnWebSocketOptions) => Promise<void> | void;
 export type WS<T = {}> = {
   send: (data: any) => void;
@@ -65,15 +71,20 @@ export type Listener = {
   io?: boolean;
   path?: string;
   func: WebSocketListenerFun | HttpListenerFun;
+  /**
+ * @description 是否默认解析为 JSON，如果为 true，则 message 会被 JSON.parse 处理，默认是 true
+ */
+  json?: boolean,
 }
 
 export type WebSocketListenerFun = (req: WebSocketReq, res: WebSocketRes) => Promise<void> | void;
 export type HttpListenerFun = (req: RouterReq, res: RouterRes) => Promise<void> | void;
 
-export type WebSocketReq = {
+export type WebSocketReq<T = {}, U = Record<string, any>> = {
   emitter?: EventEmitter;
-  ws: WS;
-  data: any;
+  ws: WS<T>;
+  data?: U;
+  message?: string | Buffer;
   pathname?: string;
   token?: string;
   id?: string;

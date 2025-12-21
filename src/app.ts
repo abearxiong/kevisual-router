@@ -134,7 +134,7 @@ export class App<U = {}> {
     }
     this.server.on({
       id: 'app-request-listener',
-      fun: fn as any,
+      func: fn as any,
     });
   }
 }

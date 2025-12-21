@@ -149,27 +149,4 @@ export default [
     },
     plugins: [dts()],
   },
-  {
-    input: 'src/router-simple-lib.ts',
-    output: {
-      file: 'dist/router-simple-lib.js',
-      format: 'es',
-    },
-    plugins: [
-      resolve({
-        browser: false,
-      }),
-      commonjs(),
-      typescript(),
-    ],
-    external: ['xml2js'],
-  },
-  {
-    input: 'src/router-simple-lib.ts',
-    output: {
-      file: 'dist/router-simple-lib.d.ts',
-      format: 'es',
-    },
-    plugins: [dts()],
-  },
 ];

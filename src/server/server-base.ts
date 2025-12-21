@@ -198,22 +198,29 @@ export class ServerBase implements ServerType {
   }
   async onWebSocket({ ws, message, pathname, token, id }: OnWebSocketOptions) {
     const listener = this.listeners.find((item) => item.path === pathname && item.io);
-    const data: any = parseIfJson(message);
 
     if (listener) {
       const end = (data: any) => {
         ws.send(JSON.stringify(data));
       }
+      let data: any = {};
+      const isJson = listener.json !== false;
+      if (isJson) {
+        data = parseIfJson(message);
+      }
       (listener.func as WebSocketListenerFun)({
         emitter: this.emitter,
         data,
         token,
+        message,
+        pathname,
         id,
         ws,
       }, { end });
       return;
     }
-
+    // 默认处理方案，直接调用 handle 方法
+    const data: any = parseIfJson(message);
     if (typeof data === 'string') {
       const cleanMessage = data.trim().replace(/^["']|["']$/g, '');
       if (cleanMessage === 'close') {
