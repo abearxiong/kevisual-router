@@ -179,14 +179,15 @@ export class ServerBase implements ServerType {
   }
   on(listener: OnListener) {
     this.listeners = [];
+    const randomId = Math.random().toString(36).substring(2, 15);
     if (typeof listener === 'function') {
-      this.listeners.push({ func: listener });
+      this.listeners.push({ func: listener, id: 'all-' + randomId });
       return;
     }
     if (Array.isArray(listener)) {
       for (const item of listener) {
         if (typeof item === 'function') {
-          this.listeners.push({ func: item });
+          this.listeners.push({ func: item, id: 'all-' + randomId });
         } else {
           this.listeners.push(item);
         }
