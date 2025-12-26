@@ -555,13 +555,13 @@ export class QueryRouter {
   hasRoute(path: string, key: string = '') {
     return this.routes.find((r) => r.path === path && r.key === key);
   }
-  createRouteList(force: boolean = false) {
-    const hasListRoute = this.hasRoute('route', 'list');
+  createRouteList(force: boolean = false, filter?: (route: Route) => boolean) {
+    const hasListRoute = this.hasRoute('router', 'list');
     if (!hasListRoute || force) {
-      const listRoute = new Route('route', 'list', {
+      const listRoute = new Route('router', 'list', {
         description: '列出当前应用下的所有的路由信息',
         run: async (ctx: RouteContext) => {
-          const list = this.getList();
+          const list = this.getList(filter);
           ctx.body = list;
         },
       });
