@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/package",
   "name": "@kevisual/router",
-  "version": "0.0.50",
+  "version": "0.0.51",
   "description": "",
   "type": "module",
   "main": "./dist/router.js",
@@ -15,6 +15,7 @@
   "files": [
     "dist",
     "src",
+    "auto.ts",
     "mod.ts"
   ],
   "keywords": [],

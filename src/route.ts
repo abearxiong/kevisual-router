@@ -576,10 +576,16 @@ export class QueryRouter {
    * -- .on
    * -- .send
    */
-  wait(params?: { path?: string; key?: string; payload?: any }, opts?: { emitter?: any, timeout?: number, getList?: boolean }) {
+  wait(params?: { path?: string; key?: string; payload?: any }, opts?: {
+    emitter?: any,
+    timeout?: number,
+    getList?: boolean
+    force?: boolean
+    filter?: (route: Route) => boolean
+  }) {
     const getList = opts?.getList ?? true;
     if (getList) {
-      this.createRouteList();
+      this.createRouteList(opts?.force ?? false, opts?.filter);
     }
     return listenProcess({ app: this, params, ...opts });
   }
