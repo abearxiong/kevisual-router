@@ -562,7 +562,7 @@ export class QueryRouter {
         description: '列出当前应用下的所有的路由信息',
         run: async (ctx: RouteContext) => {
           const list = this.getList(filter);
-          ctx.body = list;
+          ctx.body = { list };
         },
       });
       this.add(listRoute);
