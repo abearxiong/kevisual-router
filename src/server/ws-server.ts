@@ -2,7 +2,6 @@
 import { WebSocketServer } from 'ws';
 import type { WebSocket } from 'ws';
 import { ServerType } from './server-type.ts'
-import { parseIfJson } from '../utils/parse.ts';
 import { isBun } from '../utils/is-engine.ts';
 
 
@@ -62,6 +61,8 @@ export class WsServerBase {
       });
       this.server.sendConnected(ws);
       this.wss.on('close', () => {
+        // @ts-ignore
+        ws?.data?.close?.();
         this.server.onWsClose(ws);
       });
     });

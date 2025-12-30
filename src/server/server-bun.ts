@@ -253,6 +253,7 @@ export class BunServer extends ServerBase implements ServerType {
         },
         close: (ws: any) => {
           // WebSocket 连接关闭
+          ws?.data?.close?.();
           this.onWsClose(ws);
         },
       },

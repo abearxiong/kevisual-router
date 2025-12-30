@@ -3,7 +3,7 @@ import { handleServer } from './handle-server.ts';
 import * as cookie from './cookie.ts';
 import { ServerType, Listener, OnListener, ServerOpts, OnWebSocketOptions, OnWebSocketFn, WebSocketListenerFun, ListenerFun, HttpListenerFun, WS } from './server-type.ts';
 import { parseIfJson } from '../utils/parse.ts';
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'eventemitter3';
 type CookieFn = (name: string, value: string, options?: cookie.SerializeOptions, end?: boolean) => void;
 
 export type HandleCtx = {
@@ -273,6 +273,10 @@ export class ServerBase implements ServerType {
       end({ code: 500, message: `${type} server is error` });
     }
   }
+  /**
+   * 根据emitter提醒关闭ws连接
+   * @param ws 
+   */
   async onWsClose(ws: WS) {
     const id = ws?.data?.id || '';
     if (id) {
