@@ -21,21 +21,21 @@
   "keywords": [],
   "author": "abearxiong",
   "license": "MIT",
-  "packageManager": "pnpm@10.26.2",
+  "packageManager": "pnpm@10.28.0",
   "devDependencies": {
     "@kevisual/local-proxy": "^0.0.8",
-    "@kevisual/query": "^0.0.33",
+    "@kevisual/query": "^0.0.35",
     "@rollup/plugin-alias": "^6.0.0",
     "@rollup/plugin-commonjs": "29.0.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@rollup/plugin-typescript": "^12.3.0",
     "@types/bun": "^1.3.5",
-    "@types/node": "^25.0.3",
+    "@types/node": "^25.0.7",
     "@types/send": "^1.2.1",
     "@types/xml2js": "^0.4.14",
     "@types/ws": "^8.18.1",
     "nanoid": "^5.1.6",
-    "rollup": "^4.54.0",
+    "rollup": "^4.55.1",
     "rollup-plugin-dts": "^6.3.0",
     "ts-loader": "^9.5.4",
     "ts-node": "^10.9.2",
@@ -43,7 +43,7 @@
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "xml2js": "^0.6.2",
-    "zod": "^4.2.1",
+    "zod": "^4.3.5",
     "eventemitter3": "^5.0.1",
     "ws": "npm:@kevisual/ws"
   },
@@ -53,7 +53,7 @@
   },
   "dependencies": {
     "path-to-regexp": "^8.3.0",
-    "selfsigned": "^5.4.0",
+    "selfsigned": "^5.5.0",
     "send": "^1.2.1"
   },
   "publishConfig": {

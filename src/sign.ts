@@ -9,7 +9,7 @@ export type AltNames = {
   value?: string;
   ip?: string;
 };
-export const createCert = (attrs: Attributes[] = [], altNames: AltNames[] = []) => {
+export const createCert = async(attrs: Attributes[] = [], altNames: AltNames[] = []) => {
   let attributes = [
     { name: 'countryName', value: 'CN' }, // 国家代码
     { name: 'stateOrProvinceName', value: 'ZheJiang' }, // 州名
@@ -51,7 +51,7 @@ export const createCert = (attrs: Attributes[] = [], altNames: AltNames[] = []) 
       },
     ],
   };
-  const pems = generate(attributes, options);
+  const pems = await generate(attributes, options);
   return {
     key: pems.private,
     cert: pems.cert,

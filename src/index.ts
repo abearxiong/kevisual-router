@@ -20,7 +20,7 @@ export { App } from './app.ts';
 export * from './router-define.ts';
 
 
-export {
+export type {
   RouterReq,
   RouterRes,
   OnWebSocketFn,
@@ -32,3 +32,5 @@ export {
   HttpListenerFun,
   OnListener,
 } from './server/server-type.ts';
+
+export { loadTS } from './auto/load-ts.ts';
