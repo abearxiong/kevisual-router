@@ -7,6 +7,7 @@ import { handleServer } from './server/handle-server.ts';
 import { IncomingMessage, ServerResponse } from 'http';
 import { isBun } from './utils/is-engine.ts';
 import { BunServer } from './server/server-bun.ts';
+import { nanoid } from 'nanoid';
 
 type RouterHandle = (msg: { path: string;[key: string]: any }) => { code: string; data?: any; message?: string;[key: string]: any };
 type AppOptions<T = {}> = {
@@ -16,6 +17,7 @@ type AppOptions<T = {}> = {
   routerHandle?: RouterHandle;
   routerContext?: RouteContext<T>;
   serverOptions?: ServerNodeOpts;
+  appId?: string;
 };
 
 export type AppRouteContext<T = {}> = HandleCtx & RouteContext<T> & { app: App<T> };
@@ -25,6 +27,7 @@ export type AppRouteContext<T = {}> = HandleCtx & RouteContext<T> & { app: App<T
  *  U - Route Context的扩展类型
  */
 export class App<U = {}> {
+  appId: string;
   router: QueryRouter;
   server: ServerType;
   constructor(opts?: AppOptions<U>) {
@@ -42,6 +45,12 @@ export class App<U = {}> {
     router.setContext({ needSerialize: true, ...opts?.routerContext });
     this.router = router;
     this.server = server;
+    if (opts?.appId) {
+      this.appId = opts.appId;
+    } else {
+      this.appId = nanoid(16);
+    }
+    router.appId = this.appId;
   }
   listen(port: number, hostname?: string, backlog?: number, listeningListener?: () => void): void;
   listen(port: number, hostname?: string, listeningListener?: () => void): void;

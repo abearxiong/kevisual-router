@@ -5,6 +5,11 @@ import { listenProcess } from './utils/listen-process.ts';
 
 export type RouterContextT = { code?: number;[key: string]: any };
 export type RouteContext<T = { code?: number }, S = any> = {
+  /**
+   * 本地自己调用的时候使用，可以标识为当前自调用，那么 auth 就不许重复的校验
+   * 或者不需要登录的，直接调用
+   */
+  appId?: string;
   // run first
   query?: { [key: string]: any };
   // response body
@@ -217,6 +222,7 @@ export class Route<U = { [key: string]: any }, T extends SimpleObject = SimpleOb
 }
 
 export class QueryRouter {
+  appId: string = '';
   routes: Route[];
   maxNextRoute = 40;
   context?: RouteContext = {}; // default context for call
@@ -555,6 +561,21 @@ export class QueryRouter {
   hasRoute(path: string, key: string = '') {
     return this.routes.find((r) => r.path === path && r.key === key);
   }
+  findRoute(opts?: { path?: string; key?: string; id?: string }) {
+    const { path, key, id } = opts || {};
+    return this.routes.find((r) => {
+      if (id) {
+        return r.id === id;
+      }
+      if (path) {
+        if (key !== undefined) {
+          return r.path === path && r.key === key;
+        }
+        return r.path === path;
+      }
+      return false;
+    });
+  }
   createRouteList(force: boolean = false, filter?: (route: Route) => boolean) {
     const hasListRoute = this.hasRoute('router', 'list');
     if (!hasListRoute || force) {
@@ -594,6 +615,7 @@ export class QueryRouter {
 type QueryRouterServerOpts = {
   handleFn?: HandleFn;
   context?: RouteContext;
+  appId?: string;
 };
 interface HandleFn<T = any> {
   (msg: { path: string;[key: string]: any }, ctx?: any): { code: string; data?: any; message?: string;[key: string]: any };
@@ -604,11 +626,17 @@ interface HandleFn<T = any> {
  * @description 移除server相关的功能，只保留router相关的功能，和http.createServer不相关，独立
  */
 export class QueryRouterServer extends QueryRouter {
+  declare appId: string;
   handle: any;
   constructor(opts?: QueryRouterServerOpts) {
     super();
     this.handle = this.getHandle(this, opts?.handleFn, opts?.context);
     this.setContext({ needSerialize: false, ...opts?.context });
+    if (opts?.appId) {
+      this.appId = opts.appId;
+    } else {
+      this.appId = nanoid(16);
+    }
   }
   setHandle(wrapperFn?: HandleFn, ctx?: RouteContext) {
     this.handle = this.getHandle(this, wrapperFn, ctx);

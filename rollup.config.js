@@ -82,29 +82,6 @@ export default [
     plugins: [dts()],
   },
   {
-    input: 'src/sign.ts',
-    output: {
-      file: 'dist/router-sign.js',
-      format: 'es',
-    },
-    plugins: [
-      createAlias(),
-      resolve({
-        browser: false,
-      }),
-      commonjs(),
-      typescript(),
-    ],
-  },
-  {
-    input: 'src/sign.ts',
-    output: {
-      file: 'dist/router-sign.d.ts',
-      format: 'es',
-    },
-    plugins: [dts()],
-  },
-  {
     input: 'src/router-define.ts',
     output: {
       file: 'dist/router-define.js',

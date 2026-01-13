@@ -1,4 +1,5 @@
-import { QueryRouter, Route, Server } from '@kevisual/router';
+import { QueryRouter, Route,  } from '@kevisual/router';
+// Server
 
 const router = new QueryRouter();
 
@@ -9,14 +10,14 @@ route01.run = async (ctx) => {
 };
 router.add(route01);
 
-const server = new Server({
-  handle: async (msg) => {
-    const res = await router.parse(msg);
-    const { code, body, message } = res;
-    // console.log('response', res);
-    return { code, data: body, message };
-  }
-});
+// const server = new Server({
+//   handle: async (msg) => {
+//     const res = await router.parse(msg);
+//     const { code, body, message } = res;
+//     // console.log('response', res);
+//     return { code, data: body, message };
+//   }
+// });
 
 // server.setHandle(async (msg) => {
 //   const res = await router.parse(msg);
@@ -25,7 +26,7 @@ const server = new Server({
 //   return { code, data: body, message };
 // });
 
-server.listen(3000);
+// server.listen(3000);
 
 const route02 = new Route('demo', '02');
 route02.run = async (ctx) => {

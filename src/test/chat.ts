@@ -1,5 +1,5 @@
 import { App } from '../app.ts'
-import { RouterChat } from '@/chat.ts';
+import { RouterChat } from '@/modules/chat.ts';
 
 const app = new App();
 
