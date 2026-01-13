@@ -1,0 +1,56 @@
+# .cnb.yml
+include:
+  - https://cnb.cool/kevisual/cnb/-/blob/main/.cnb/template.yml
+
+.common_env: &common_env
+  env:
+    TO_REPO: kevisual/router
+    TO_URL: git.xiongxiao.me
+  imports:
+    - https://cnb.cool/kevisual/env/-/blob/main/.env.development
+
+$:
+  vscode:
+    - docker:
+        image: docker.cnb.cool/kevisual/dev-env:latest
+      services:
+        - vscode
+        - docker
+      imports: !reference  [.common_env, imports]
+      # 开发环境启动后会执行的任务
+      # stages:
+      #   - name: pnpm install
+      #     script: pnpm install
+
+.common_sync_to_gitea: &common_sync_to_gitea
+  - <<: *common_env
+    services: !reference  [.common_sync_to_gitea_template, services]
+    stages: !reference [.common_sync_to_gitea_template, stages]
+
+.common_sync_from_gitea: &common_sync_from_gitea
+  - <<: *common_env
+    services: !reference  [.common_sync_from_gitea_template, services]
+    stages: !reference [.common_sync_from_gitea_template, stages]
+
+main:
+  web_trigger_sync_to_gitea: 
+    - <<: *common_sync_to_gitea
+  web_trigger_sync_from_gitea:
+    - <<: *common_sync_from_gitea
+  api_trigger_sync_to_gitea:
+    - <<: *common_sync_to_gitea
+  api_trigger_sync_from_gitea:
+    - <<: *common_sync_from_gitea
+
+
+
+branch:
+  # 如下按钮在分支名以 release 开头的分支详情页面显示
+  - reg: "^main"
+    buttons:
+      - name: 同步代码到gitea
+        desc: 同步代码到gitea
+        event: web_trigger_sync_to_gitea
+      - name: 同步gitea代码到当前仓库
+        desc: 同步gitea代码到当前仓库
+        event: web_trigger_sync_from_gitea
