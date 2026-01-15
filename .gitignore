@@ -6,3 +6,5 @@ dist
 
 https-cert.pem
 https-key.pem
+
+.pnpm-store

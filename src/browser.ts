@@ -6,10 +6,10 @@ export { createSchema } from './validator/index.ts';
 
 export type { RouteContext, RouteOpts } from './route.ts';
 
-export type { Run } from './route.ts';
+export type { Run, Skill } from './route.ts';
+
+export { createSkill } from './route.ts';
 
 export { CustomError } from './result/error.ts';
-
-export * from './server/parse-body.ts';
 
 export * from './router-define.ts';

@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid';
-import { RouteContext } from './route.ts';
+import { RouteContext } from '../route.ts';
 
 export class Connect {
   path: string;

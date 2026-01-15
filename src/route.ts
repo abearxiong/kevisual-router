@@ -2,6 +2,8 @@ import { nanoid } from 'nanoid';
 import { CustomError } from './result/error.ts';
 import { pick } from './utils/pick.ts';
 import { listenProcess } from './utils/listen-process.ts';
+import { z } from 'zod';
+import { filter } from '@kevisual/js-filter'
 
 export type RouterContextT = { code?: number;[key: string]: any };
 export type RouteContext<T = { code?: number }, S = any> = {
@@ -90,6 +92,22 @@ export type RouteOpts<U = {}, T = SimpleObject> = {
 };
 export type DefineRouteOpts = Omit<RouteOpts, 'idUsePath' | 'nextRoute'>;
 const pickValue = ['path', 'key', 'id', 'description', 'type', 'middleware', 'metadata'] as const;
+
+
+export type Skill<T = SimpleObject> = {
+  skill: string;
+  title: string;
+  summary?: string;
+  args?: z.ZodTypeAny;
+} & T
+/** */
+export const createSkill = <T = SimpleObject>(skill: Skill<T>): Skill<T> => {
+  return {
+    args: {},
+    ...skill
+  };
+}
+
 export type RouteInfo = Pick<Route, (typeof pickValue)[number]>;
 export class Route<U = { [key: string]: any }, T extends SimpleObject = SimpleObject> {
   /**
