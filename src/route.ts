@@ -98,7 +98,9 @@ export type Skill<T = SimpleObject> = {
   skill: string;
   title: string;
   summary?: string;
-  args?: z.ZodTypeAny;
+  args?: {
+    [key: string]: any
+  };
 } & T
 /** */
 export const createSkill = <T = SimpleObject>(skill: Skill<T>): Skill<T> => {
