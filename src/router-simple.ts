@@ -2,6 +2,8 @@ import { pathToRegexp, Key } from 'path-to-regexp';
 import type { IncomingMessage, ServerResponse, Server } from 'node:http';
 import { parseBody, parseSearch, parseSearchValue } from './server/parse-body.ts';
 import { ListenOptions } from 'node:net';
+// import { Hono } from 'hono'
+// const app = new Hono()
 
 type Req = IncomingMessage & { params?: Record<string, string> };
 type SimpleObject = {
