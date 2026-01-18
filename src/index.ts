@@ -8,11 +8,12 @@ export type { RouteContext, RouteOpts, RouteMiddleware } from './route.ts';
 
 export type { Run, Skill } from './route.ts';
 
-export { createSkill } from './route.ts';
+export { createSkill, tool } from './route.ts';
 
 export { CustomError } from './result/error.ts';
 
 export * from './router-define.ts';
+// --- 以上同步更新至 browser.ts ---
 
 export { ServerNode, handleServer } from './server/index.ts';
 

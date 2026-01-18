@@ -102,6 +102,9 @@ export type Skill<T = SimpleObject> = {
     [key: string]: any
   };
 } & T
+export const tool = {
+  schema: z
+}
 /** */
 export const createSkill = <T = SimpleObject>(skill: Skill<T>): Skill<T> => {
   return {

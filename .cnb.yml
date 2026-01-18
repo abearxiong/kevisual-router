@@ -17,10 +17,7 @@ $:
         - vscode
         - docker
       imports: !reference  [.common_env, imports]
-      # 开发环境启动后会执行的任务
-      # stages:
-      #   - name: pnpm install
-      #     script: pnpm install
+      stages: !reference  [.dev_tempalte, stages]
 
 .common_sync_to_gitea: &common_sync_to_gitea
   - <<: *common_env
