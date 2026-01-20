@@ -4,7 +4,7 @@ import { type App } from './app.ts'
 import { type Plugin } from "@opencode-ai/plugin"
 
 import { filter } from '@kevisual/js-filter';
-export const addCallFn = (app: QueryRouterServer) => {
+export const addCallFn = (app: App) => {
   app.route({
     path: 'call',
     key: '',
@@ -35,20 +35,23 @@ export const addCallFn = (app: QueryRouterServer) => {
   }).addTo(app)
 }
 export const createRouterAgentPluginFn = (opts?: {
-  router?: QueryRouter,
+  router?: App | QueryRouterServer,
   //** 过滤比如，WHERE metadata.tags includes 'opencode' */
   query?: string
 }) => {
   let router = opts?.router
   if (!router) {
     const app = useContextKey<App>('app')
-    router = app.router
+    router = app
   }
   if (!router) {
     throw new Error('Router 参数缺失')
   }
   if (!router.hasRoute('call', '')) {
-    addCallFn(router as QueryRouterServer)
+    addCallFn(router as App)
+  }
+  if (!router.hasRoute('auth', '')) {
+    router.route({ path: 'auth', key: '', id: 'auth', description: '认证' }).define(async (ctx) => { }).addTo(router as App)
   }
   const _routes = filter(router.routes, opts?.query || '')
   const routes = _routes.filter(r => {
@@ -88,6 +91,7 @@ export const createRouterAgentPluginFn = (opts?: {
                 }
                 return str;
               }
+              console.error('调用出错', res);
               return `Error: ${res?.message || '无法获取结果'}`;
             }
           }

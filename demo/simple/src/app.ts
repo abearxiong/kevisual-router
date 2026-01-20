@@ -10,15 +10,6 @@ route01.run = async (ctx) => {
 };
 app.addRoute(route01);
 
-// app.use(
-//   'demo',
-//   async (ctx) => {
-//     ctx.body = '01';
-//     return ctx;
-//   },
-//   { key: '01' },
-// );
-
 const route02 = new Route('demo', '02');
 route02.run = async (ctx) => {
   ctx.body = '02';

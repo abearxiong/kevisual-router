@@ -60,7 +60,7 @@ export type RouteContext<T = { code?: number }, S = any> = {
   needSerialize?: boolean;
 } & T;
 export type SimpleObject = Record<string, any>;
-export type Run<T extends SimpleObject = {}> = (ctx: RouteContext<T>) => Promise<typeof ctx | null | void>;
+export type Run<T extends SimpleObject = {}> = (ctx: Required<RouteContext<T>>) => Promise<typeof ctx | null | void>;
 
 export type NextRoute = Pick<Route, 'id' | 'path' | 'key'>;
 export type RouteMiddleware =
@@ -355,7 +355,7 @@ export class QueryRouter {
         const middleware = routeMiddleware[i];
         if (middleware) {
           try {
-            await middleware.run(ctx);
+            await middleware.run(ctx as Required<RouteContext>);
           } catch (e) {
             if (route?.isDebug) {
               console.error('=====debug====:middlerware error');
@@ -385,7 +385,7 @@ export class QueryRouter {
     if (route) {
       if (route.run) {
         try {
-          await route.run(ctx);
+          await route.run(ctx as Required<RouteContext>);
         } catch (e) {
           if (route?.isDebug) {
             console.error('=====debug====:', 'router run error:', e.message);
@@ -664,15 +664,9 @@ export class QueryRouterServer extends QueryRouter {
   setHandle(wrapperFn?: HandleFn, ctx?: RouteContext) {
     this.handle = this.getHandle(this, wrapperFn, ctx);
   }
-  use(path: string, fn: (ctx: any) => any, opts?: RouteOpts) {
-    const route = new Route(path, '', opts);
-    route.run = fn;
-    this.add(route);
-  }
   addRoute(route: Route) {
     this.add(route);
   }
-
   Route = Route;
   route(opts: RouteOpts): Route<Required<RouteContext>>;
   route(path: string, key?: string): Route<Required<RouteContext>>;

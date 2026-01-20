@@ -1,4 +1,5 @@
-## 兼容服务器
+## 兼容服务器静态资源代理
+
 ```ts
 import { App } from '@kevisual/router';
 

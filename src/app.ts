@@ -2,7 +2,6 @@ import { QueryRouter, Route, RouteContext, RouteOpts } from './route.ts';
 import { ServerNode, ServerNodeOpts } from './server/server.ts';
 import { HandleCtx } from './server/server-base.ts';
 import { ServerType } from './server/server-type.ts';
-import { CustomError } from './result/error.ts';
 import { handleServer } from './server/handle-server.ts';
 import { IncomingMessage, ServerResponse } from 'http';
 import { isBun } from './utils/is-engine.ts';
@@ -26,12 +25,13 @@ export type AppRouteContext<T = {}> = HandleCtx & RouteContext<T> & { app: App<T
  *  封装了 Router 和 Server 的 App 模块，处理http的请求和响应，内置了 Cookie 和 Token 和 res 的处理
  *  U - Route Context的扩展类型
  */
-export class App<U = {}> {
-  appId: string;
+export class App<U = {}> extends QueryRouter {
+  declare appId: string;
   router: QueryRouter;
   server: ServerType;
   constructor(opts?: AppOptions<U>) {
-    const router = opts?.router || new QueryRouter();
+    super();
+    const router = this;
     let server = opts?.server;
     if (!server) {
       const serverOptions = opts?.serverOptions || {};
@@ -64,15 +64,9 @@ export class App<U = {}> {
     // @ts-ignore
     this.server.listen(...args);
   }
-  use(path: string, fn: (ctx: any) => any, opts?: RouteOpts) {
-    const route = new Route(path, '', opts);
-    route.run = fn;
-    this.router.add(route);
-  }
   addRoute(route: Route) {
-    this.router.add(route);
+    super.add(route);
   }
-  add = this.addRoute;
 
   Route = Route;
   route(opts: RouteOpts<AppRouteContext<U>>): Route<AppRouteContext<U>>;
@@ -109,30 +103,10 @@ export class App<U = {}> {
   }
 
   async call(message: { id?: string, path?: string; key?: string; payload?: any }, ctx?: AppRouteContext<U> & { [key: string]: any }) {
-    const router = this.router;
-    return await router.call(message, ctx);
+    return await super.call(message, ctx);
   }
-  /**
-   * @deprecated
-   */
-  async queryRoute(path: string, key?: string, payload?: any, ctx?: AppRouteContext<U> & { [key: string]: any }) {
-    return await this.router.queryRoute({ path, key, payload }, ctx);
-  }
-  async run(msg: { id?: string, path?: string; key?: string; payload?: any }, ctx?: AppRouteContext<U> & { [key: string]: any }) {
-    return await this.router.run(msg, ctx);
-  }
-  exportRoutes() {
-    return this.router.exportRoutes();
-  }
-  importRoutes(routes: any[]) {
-    this.router.importRoutes(routes);
-  }
-  importApp(app: App) {
-    this.importRoutes(app.exportRoutes());
-  }
-  throw(code?: number | string, message?: string, tips?: string): void;
-  throw(...args: any[]) {
-    throw new CustomError(...args);
+  async run(msg: { id?: string, path?: string; key?: string; payload?: any }, ctx?: Partial<AppRouteContext<U>> & { [key: string]: any }) {
+    return await super.run(msg, ctx);
   }
   static handleRequest(req: IncomingMessage, res: ServerResponse) {
     return handleServer(req, res);

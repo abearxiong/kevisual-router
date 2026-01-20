@@ -1,20 +1,21 @@
 {
   "$schema": "https://json.schemastore.org/package",
   "name": "@kevisual/router",
-  "version": "0.0.58",
+  "version": "0.0.60",
   "description": "",
   "type": "module",
   "main": "./dist/router.js",
   "types": "./dist/router.d.ts",
   "scripts": {
     "build": "npm run clean && rollup -c",
-    "build:app": "npm run build && rsync dist/*browser* ../deploy/dist",
+    "postbuild": "bun run bun.config.ts",
     "watch": "rollup -c -w",
     "clean": "rm -rf dist"
   },
   "files": [
     "dist",
     "src",
+    "agent",
     "auto.ts",
     "mod.ts"
   ],
@@ -28,7 +29,7 @@
     "@kevisual/local-proxy": "^0.0.8",
     "@kevisual/query": "^0.0.35",
     "@kevisual/use-config": "^1.0.28",
-    "@opencode-ai/plugin": "^1.1.26",
+    "@opencode-ai/plugin": "^1.1.27",
     "@rollup/plugin-alias": "^6.0.0",
     "@rollup/plugin-commonjs": "29.0.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
@@ -39,6 +40,7 @@
     "@types/ws": "^8.18.1",
     "@types/xml2js": "^0.4.14",
     "eventemitter3": "^5.0.4",
+    "fast-glob": "^3.3.3",
     "nanoid": "^5.1.6",
     "path-to-regexp": "^8.3.0",
     "rollup": "^4.55.2",
@@ -80,6 +82,7 @@
       "types": "./dist/router-simple.d.ts"
     },
     "./opencode": "./dist/opencode.js",
+    "./skill": "./dist/app.js",
     "./define": {
       "import": "./dist/router-define.js",
       "require": "./dist/router-define.js",
