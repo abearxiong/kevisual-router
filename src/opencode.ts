@@ -1,10 +1,39 @@
 import { useContextKey } from '@kevisual/context'
-import { type QueryRouter, type Skill } from './route.ts'
+import { createSkill, type QueryRouterServer, tool, type QueryRouter, type Skill } from './route.ts'
 import { type App } from './app.ts'
 import { type Plugin } from "@opencode-ai/plugin"
 
 import { filter } from '@kevisual/js-filter';
-
+export const addCallFn = (app: QueryRouterServer) => {
+  app.route({
+    path: 'call',
+    key: '',
+    description: '调用',
+    middleware: ['auth'],
+    metadata: {
+      tags: ['opencode'],
+      ...createSkill({
+        skill: 'call-app',
+        title: '调用app应用',
+        summary: '调用router的应用, 参数path, key, payload',
+        args: {
+          path: tool.schema.string().describe('应用路径，例如 cnb'),
+          key: tool.schema.string().optional().describe('应用key，例如 list-repos'),
+          payload: tool.schema.object({}).optional().describe('调用参数'),
+        }
+      })
+    },
+  }).define(async (ctx) => {
+    const { path, key = '' } = ctx.query;
+    if (!path) {
+      ctx.throw('路径path不能为空');
+    }
+    const res = await ctx.run({ path, key, payload: ctx.query.payload || {} }, {
+      ...ctx
+    });
+    ctx.forward(res);
+  }).addTo(app)
+}
 export const createRouterAgentPluginFn = (opts?: {
   router?: QueryRouter,
   //** 过滤比如，WHERE metadata.tags includes 'opencode' */
@@ -17,6 +46,9 @@ export const createRouterAgentPluginFn = (opts?: {
   }
   if (!router) {
     throw new Error('Router 参数缺失')
+  }
+  if (!router.hasRoute('call', '')) {
+    addCallFn(router as QueryRouterServer)
   }
   const _routes = filter(router.routes, opts?.query || '')
   const routes = _routes.filter(r => {
