@@ -126,4 +126,26 @@ export default [
     },
     plugins: [dts()],
   },
+  {
+    input: 'src/opencode.ts',
+    output: {
+      file: 'dist/opencode.js',
+      format: 'es',
+    },
+    plugins: [
+      resolve({
+        browser: true,
+      }),
+      commonjs(),
+      typescript(),
+    ],
+  },
+  {
+    input: 'src/opencode.ts',
+    output: {
+      file: 'dist/opencode.d.ts',
+      format: 'es',
+    },
+    plugins: [dts()],
+  },
 ];
