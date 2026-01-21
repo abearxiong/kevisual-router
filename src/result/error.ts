@@ -9,10 +9,10 @@ export class CustomError extends Error {
     this.name = 'CustomError';
     if (typeof code === 'number') {
       this.code = code;
-      this.message = message;
+      this.message = message!;
     } else {
       this.code = 500;
-      this.message = code;
+      this.message = code!;
     }
     this.tips = tips;
     // 这一步可不写，默认会保存堆栈追踪信息到自定义错误构造函数之前，
