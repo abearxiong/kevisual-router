@@ -49,9 +49,11 @@ export const runCode = async (tsPath: string, params: RunCodeParams = {}): Promi
   });
 }
 import path from 'node:path'
-const res =await runCode(path.join(process.cwd(), './src/test/mini.ts'), {
+const res = await runCode(path.join(process.cwd(), './src/test/mini.ts'), {
   // path: 'main'
   // id: 'abc'
+  path: 'router',
+  key: 'list'
 })
 
-console.log('res', res)
+console.log('res', res.data.data.list)
