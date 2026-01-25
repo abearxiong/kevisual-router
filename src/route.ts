@@ -632,7 +632,7 @@ export class QueryRouter {
     if (getList) {
       this.createRouteList(opts?.force ?? false, opts?.filter);
     }
-    return listenProcess({ app: this, params, ...opts });
+    return listenProcess({ app: this as any, params, ...opts });
   }
 }
 
