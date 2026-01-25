@@ -71,12 +71,19 @@ export const listenProcess = async ({ app, mockProcess, params, timeout = 10 * 6
      * 如果不提供path，默认是main
      */
     const {
-      path = 'main',
       payload = {},
       ...rest
     } = await getParams()
+    const msg = { ...params, ...rest, payload: { ...params?.payload, ...payload } }
+    /**
+     * 如果没有提供path和id，默认取第一个路由, 而且路由path不是router的
+     */
+    if (!msg.path && !msg.id) {
+      const route = app.routes.find(r => r.path !== 'router')
+      msg.id = route?.id
+    }
     // 执行主要逻辑
-    const result = await app.run({ path, ...params, ...rest, payload: { ...params?.payload, ...payload } })
+    const result = await app.run(msg)
     // 发送结果回主进程
     const response = {
       success: true,

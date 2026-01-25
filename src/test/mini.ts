@@ -3,7 +3,8 @@ import { Mini } from "../route.ts";
 const app = new Mini();
 
 app.route({
-  path: 'main'
+  path: 'main',
+  id: 'abc'
 }).define(async (ctx) => {
   ctx.body = {
     a: '123'

@@ -51,6 +51,7 @@ export const runCode = async (tsPath: string, params: RunCodeParams = {}): Promi
 import path from 'node:path'
 const res =await runCode(path.join(process.cwd(), './src/test/mini.ts'), {
   // path: 'main'
+  // id: 'abc'
 })
 
 console.log('res', res)

@@ -614,8 +614,7 @@ export class QueryRouter {
   }
   /**
    * 等待程序运行, 获取到message的数据,就执行
-   * params 是预设参数，默认path为main
-   * 
+   * params 是预设参数
    * emitter = process
    * -- .exit
    * -- .on
