@@ -2,7 +2,7 @@ export type ListenProcessOptions = {
   app?: any; // 传入的应用实例
   emitter?: any; // 可选的事件发射器
   params?: any; // 可选的参数
-  timeout?: number; // 可选的超时时间 (单位: 毫秒)
+  timeout?: number; // 可选的超时时间 (单位: 毫秒) 默认 10 分钟
 };
 export const listenProcess = async ({ app, emitter, params, timeout = 10 * 60 * 60 * 1000 }: ListenProcessOptions) => {
   const process = emitter || globalThis.process;
@@ -27,9 +27,10 @@ export const listenProcess = async ({ app, emitter, params, timeout = 10 * 60 * 
   }
 
   try {
-    const { path = 'main', ...rest } = await getParams()
+    const { path = 'main', payload = {}, ...rest
+    } = await getParams()
     // 执行主要逻辑
-    const result = await app.queryRoute({ path, ...rest, ...params })
+    const result = await app.queryRoute({ path, ...params, ...rest, payload: { ...params.payload, ...payload } })
     // 发送结果回主进程
     const response = {
       success: true,
