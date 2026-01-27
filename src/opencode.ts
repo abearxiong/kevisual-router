@@ -1,9 +1,10 @@
 import { useContextKey } from '@kevisual/context'
 import { createSkill, type QueryRouterServer, tool, type QueryRouter, type Skill } from './route.ts'
 import { type App } from './app.ts'
-import { type Plugin } from "@opencode-ai/plugin"
+import { PluginInput, type Plugin, Hooks } from "@opencode-ai/plugin"
 
 import { filter } from '@kevisual/js-filter';
+
 export const addCallFn = (app: App) => {
   app.route({
     path: 'call',
@@ -34,10 +35,12 @@ export const addCallFn = (app: App) => {
     ctx.forward(res);
   }).addTo(app)
 }
+
 export const createRouterAgentPluginFn = (opts?: {
   router?: App | QueryRouterServer,
   //** 过滤比如，WHERE metadata.tags includes 'opencode' */
-  query?: string
+  query?: string,
+  hooks?: (plugin: PluginInput) => Promise<Hooks>
 }) => {
   let router = opts?.router
   if (!router) {
@@ -60,10 +63,14 @@ export const createRouterAgentPluginFn = (opts?: {
       return !!metadata.skill
     }
     return false
-  })
+  });
+
   // opencode run "查看系统信息"
-  const AgentPlugin: Plugin = async ({ project, client, $, directory, worktree }) => {
+  const AgentPlugin: Plugin = async (pluginInput) => {
+    useContextKey<PluginInput>('plugin-input', () => pluginInput, true)
+    const hooks = opts?.hooks ? await opts.hooks(pluginInput) : {}
     return {
+      ...hooks,
       'tool': {
         ...routes.reduce((acc, route) => {
           const metadata = route.metadata as Skill
@@ -96,13 +103,18 @@ export const createRouterAgentPluginFn = (opts?: {
             }
           }
           return acc;
-        }, {} as Record<string, any>)
+        }, {} as Record<string, any>),
+        ...hooks?.tool
       },
-      'tool.execute.before': async (opts) => {
-        // console.log('CnbPlugin: tool.execute.before', opts.tool);
-        // delete toolSkills['cnb-login-verify']
-      }
+      // 'tool.execute.before': async (opts) => {
+      //   // console.log('CnbPlugin: tool.execute.before', opts.tool);
+      //   // delete toolSkills['cnb-login-verify']
+      // },
     }
   }
   return AgentPlugin
+}
+
+export const usePluginInput = (): PluginInput => {
+  return useContextKey<PluginInput>('plugin-input')
 }
