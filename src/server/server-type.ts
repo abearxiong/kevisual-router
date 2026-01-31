@@ -104,6 +104,12 @@ export type RouterReq<T = {}> = {
   };
   body?: string;
   cookies?: Record<string, string>;
+  bun?: {
+    request: Bun.BunRequest;
+    server: Bun.Server<{}>;
+    resolve: (response: Response) => void;
+  }
+  on: (event: 'close', listener: Function) => void;
 } & T;
 
 export type RouterRes<T = {}> = {
@@ -116,6 +122,6 @@ export type RouterRes<T = {}> = {
   setHeader: (name: string, value: string | string[]) => void;
   cookie: (name: string, value: string, options?: any) => void;
   write: (chunk: any) => void;
-  pipe: (stream: any) => void;
+  pipe: (stream: ReadableStream) => void;
   end: (data?: any) => void;
 } & T;
