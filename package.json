@@ -28,7 +28,7 @@
     "@kevisual/local-proxy": "^0.0.8",
     "@kevisual/query": "^0.0.38",
     "@kevisual/use-config": "^1.0.28",
-    "@opencode-ai/plugin": "^1.1.44",
+    "@opencode-ai/plugin": "^1.1.47",
     "@rollup/plugin-alias": "^6.0.0",
     "@rollup/plugin-commonjs": "29.0.0",
     "@rollup/plugin-node-resolve": "^16.0.3",

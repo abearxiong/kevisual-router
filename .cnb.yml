@@ -17,7 +17,7 @@ $:
         - vscode
         - docker
       imports: !reference  [.common_env, imports]
-      stages: !reference  [.dev_tempalte, stages]
+      stages: !reference  [.dev_template, stages]
 
 .common_sync_to_gitea: &common_sync_to_gitea
   - <<: *common_env

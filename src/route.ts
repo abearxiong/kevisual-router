@@ -231,8 +231,8 @@ export class Route<U = { [key: string]: any }, T extends SimpleObject = SimpleOb
     }
     return this;
   }
-  addTo(router: QueryRouter | { add: (route: Route) => void;[key: string]: any }) {
-    router.add(this);
+  addTo(router: QueryRouter | { add: (route: Route) => void;[key: string]: any }, opts?: AddOpts) {
+    router.add(this, opts);
   }
   setData(data: any) {
     this.data = data;
@@ -244,6 +244,10 @@ export class Route<U = { [key: string]: any }, T extends SimpleObject = SimpleOb
   }
 }
 
+/**
+ * @parmas override 是否覆盖已存在的route，默认true
+ */
+export type AddOpts = { override?: boolean };
 export class QueryRouter {
   appId: string = '';
   routes: Route[];
@@ -252,11 +256,20 @@ export class QueryRouter {
   constructor() {
     this.routes = [];
   }
-
-  add(route: Route) {
+  /**
+   * add route
+   * @param route
+   * @param opts
+   */
+  add(route: Route, opts?: AddOpts) {
+    const override = opts?.override ?? true;
     const has = this.routes.findIndex((r) => r.path === route.path && r.key === route.key);
+
     if (has !== -1) {
-      // remove the old route
+      if (!override) {
+        return;
+      }
+      // 如果存在，且override为true，则覆盖
       this.routes.splice(has, 1);
     }
     this.routes.push(route);
@@ -664,8 +677,8 @@ export class QueryRouterServer extends QueryRouter {
   setHandle(wrapperFn?: HandleFn, ctx?: RouteContext) {
     this.handle = this.getHandle(this, wrapperFn, ctx);
   }
-  addRoute(route: Route) {
-    this.add(route);
+  addRoute(route: Route, opts?: AddOpts) {
+    this.add(route, opts);
   }
   Route = Route;
   route(opts: RouteOpts): Route<Required<RouteContext>>;

@@ -1,4 +1,4 @@
-import { QueryRouter, Route, RouteContext, RouteOpts } from './route.ts';
+import { AddOpts, QueryRouter, Route, RouteContext, RouteOpts } from './route.ts';
 import { ServerNode, ServerNodeOpts } from './server/server.ts';
 import { HandleCtx } from './server/server-base.ts';
 import { ServerType } from './server/server-type.ts';
@@ -64,8 +64,8 @@ export class App<U = {}> extends QueryRouter {
     // @ts-ignore
     this.server.listen(...args);
   }
-  addRoute(route: Route) {
-    super.add(route);
+  addRoute(route: Route, opts?: AddOpts) {
+    super.add(route, opts);
   }
 
   Route = Route;
