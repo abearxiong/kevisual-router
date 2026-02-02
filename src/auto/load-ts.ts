@@ -17,9 +17,11 @@ export const getMatchFiles = async (match: string = './*.ts', { cwd = process.cw
   }
   if (runtime.isBun) {
     // Bun 环境下
+    const bunPkgs = 'bun';
+    const pathPkgs = 'node:path';
     // @ts-ignore
-    const { Glob } = await import('bun');
-    const path = await import('path');
+    const { Glob } = await import(/*---*/bunPkgs);
+    const path = await import(/*---*/pathPkgs);
     // @ts-ignore
     const glob = new Glob(match, { cwd, absolute: true, onlyFiles: true });
     const files: string[] = [];
@@ -32,7 +34,7 @@ export const getMatchFiles = async (match: string = './*.ts', { cwd = process.cw
   return [];
 };
 
-export const loadTS = async (match: string = './*.ts', { cwd = process.cwd(), load }: GlobOptions = {}): Promise<any[]> => {
+export const loadTS = async (match: string = './*.ts', { cwd = process?.cwd?.(), load }: GlobOptions = {}): Promise<any[]> => {
   const files = await getMatchFiles(match, { cwd });
-  return Promise.all(files.map((file) => (load ? load(file) : import(file))));
+  return Promise.all(files.map((file) => (load ? load(file) : import(/*---*/file))));
 };

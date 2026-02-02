@@ -34,4 +34,4 @@ export type {
   OnListener,
 } from './server/server-type.ts';
 
-export { loadTS } from './auto/load-ts.ts';
+// export { loadTS } from './auto/load-ts.ts';
