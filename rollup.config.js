@@ -148,4 +148,27 @@ export default [
     },
     plugins: [dts()],
   },
+  {
+    input: 'src/ws.ts',
+    output: {
+      file: 'dist/ws.js',
+      format: 'es',
+    },
+    external: ['ws'],
+    plugins: [
+      resolve({
+        // browser: true,
+      }),
+      commonjs(),
+      typescript(),
+    ],
+  },
+  {
+    input: 'src/ws.ts',
+    output: {
+      file: 'dist/ws.d.ts',
+      format: 'es',
+    },
+    plugins: [dts()],
+  },
 ];
