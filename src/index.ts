@@ -8,7 +8,7 @@ export type { RouteContext, RouteOpts, RouteMiddleware } from './route.ts';
 
 export type { Run, Skill } from './route.ts';
 
-export { createSkill, tool } from './route.ts';
+export { createSkill, tool, fromJSONSchema, toJSONSchema } from './route.ts';
 
 export { CustomError } from './result/error.ts';
 

@@ -1,7 +1,7 @@
 import { nanoid } from 'nanoid';
 import { CustomError } from './result/error.ts';
 import { pick } from './utils/pick.ts';
-import { listenProcess } from './utils/listen-process.ts';
+import { listenProcess, MockProcess } from './utils/listen-process.ts';
 import { z } from 'zod';
 import { filter } from '@kevisual/js-filter'
 
@@ -243,11 +243,42 @@ export class Route<U = { [key: string]: any }, T extends SimpleObject = SimpleOb
     throw new CustomError(...args);
   }
 }
+export const toJSONSchema = (route: RouteInfo) => {
+  const pickValues = pick(route, pickValue as any);
+  if (pickValues?.metadata?.args) {
+    const args = pickValues.metadata.args;
+    const keys = Object.keys(args);
+    const newArgs: { [key: string]: any } = {};
+    for (let key of keys) {
+      const item = args[key] as z.ZodAny;
+      if (item && typeof item === 'object' && typeof item.toJSONSchema === 'function') {
+        newArgs[key] = item.toJSONSchema();
+      } else {
+        newArgs[key] = args[key]; // 可能不是schema
+      }
+    }
+    pickValues.metadata.args = newArgs;
+  }
+  return pickValues;
+}
+
+export const fromJSONSchema = (route: RouteInfo): {
+  [key: string]: z.ZodTypeAny
+} => {
+  const args = route?.metadata?.args || {};
+  const keys = Object.keys(args);
+  const newArgs: { [key: string]: any } = {};
+  for (let key of keys) {
+    const item = args[key];
+    newArgs[key] = z.fromJSONSchema(item);
+  }
+  return newArgs;
+}
 
 /**
- * @parmas override 是否覆盖已存在的route，默认true
+ * @parmas overwrite 是否覆盖已存在的route，默认true
  */
-export type AddOpts = { override?: boolean };
+export type AddOpts = { overwrite?: boolean };
 export class QueryRouter {
   appId: string = '';
   routes: Route[];
@@ -262,14 +293,14 @@ export class QueryRouter {
    * @param opts
    */
   add(route: Route, opts?: AddOpts) {
-    const override = opts?.override ?? true;
+    const overwrite = opts?.overwrite ?? true;
     const has = this.routes.findIndex((r) => r.path === route.path && r.key === route.key);
 
     if (has !== -1) {
-      if (!override) {
+      if (!overwrite) {
         return;
       }
-      // 如果存在，且override为true，则覆盖
+      // 如果存在，且overwrite为true，则覆盖
       this.routes.splice(has, 1);
     }
     this.routes.push(route);
@@ -555,7 +586,23 @@ export class QueryRouter {
   }
   getList(filter?: (route: Route) => boolean): RouteInfo[] {
     return this.routes.filter(filter || (() => true)).map((r) => {
-      return pick(r, pickValue as any);
+      const pickValues = pick(r, pickValue as any);
+      if (pickValues?.metadata?.args) {
+        // const demoArgs = { k: tool.schema.string().describe('示例参数') };
+        const args = pickValues.metadata.args;
+        const keys = Object.keys(args);
+        const newArgs: { [key: string]: any } = {};
+        for (let key of keys) {
+          const item = args[key] as z.ZodAny;
+          if (item && typeof item === 'object' && typeof item.toJSONSchema === 'function') {
+            newArgs[key] = item.toJSONSchema();
+          } else {
+            newArgs[key] = args[key]; // 可能不是schema
+          }
+        }
+        pickValues.metadata.args = newArgs;
+      }
+      return pickValues;
     });
   }
   /**
@@ -634,7 +681,7 @@ export class QueryRouter {
    * -- .send
    */
   wait(params?: { path?: string; key?: string; payload?: any }, opts?: {
-    emitter?: any,
+    mockProcess?: MockProcess,
     timeout?: number,
     getList?: boolean
     force?: boolean
@@ -646,6 +693,8 @@ export class QueryRouter {
     }
     return listenProcess({ app: this as any, params, ...opts });
   }
+  static toJSONSchema = toJSONSchema;
+  static fromJSONSchema = fromJSONSchema;
 }
 
 type QueryRouterServerOpts = {
@@ -730,3 +779,4 @@ export class QueryRouterServer extends QueryRouter {
 
 
 export class Mini extends QueryRouterServer { }
+
