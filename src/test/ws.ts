@@ -1,7 +1,6 @@
 import { App } from "../app.ts";
 
 const app = new App({
-  io: true
 });
 
 app

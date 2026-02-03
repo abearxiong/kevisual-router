@@ -61,7 +61,7 @@ export type RouteContext<T = { code?: number }, S = any> = {
 } & T;
 export type SimpleObject = Record<string, any>;
 export type Run<T extends SimpleObject = {}> = (ctx: Required<RouteContext<T>>) => Promise<typeof ctx | null | void>;
-
+export type RunMessage = { path?: string; key?: string; id?: string; payload?: any; };
 export type NextRoute = Pick<Route, 'id' | 'path' | 'key'>;
 export type RouteMiddleware =
   | {
@@ -262,17 +262,17 @@ export const toJSONSchema = (route: RouteInfo) => {
   return pickValues;
 }
 
-export const fromJSONSchema = (route: RouteInfo): {
-  [key: string]: z.ZodTypeAny
-} => {
-  const args = route?.metadata?.args || {};
+export const fromJSONSchema = (route: RouteInfo): RouteInfo => {
+  const args = route?.metadata?.args;
+  if (!args) return route;
   const keys = Object.keys(args);
   const newArgs: { [key: string]: any } = {};
   for (let key of keys) {
     const item = args[key];
     newArgs[key] = z.fromJSONSchema(item);
   }
-  return newArgs;
+  route.metadata.args = newArgs;
+  return route;
 }
 
 /**
@@ -680,7 +680,7 @@ export class QueryRouter {
    * -- .on
    * -- .send
    */
-  wait(params?: { path?: string; key?: string; payload?: any }, opts?: {
+  wait(params?: { message: RunMessage }, opts?: {
     mockProcess?: MockProcess,
     timeout?: number,
     getList?: boolean
@@ -693,8 +693,8 @@ export class QueryRouter {
     }
     return listenProcess({ app: this as any, params, ...opts });
   }
-  static toJSONSchema = toJSONSchema;
-  static fromJSONSchema = fromJSONSchema;
+  toJSONSchema = toJSONSchema;
+  fromJSONSchema = fromJSONSchema;
 }
 
 type QueryRouterServerOpts = {

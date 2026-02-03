@@ -1,25 +1,7 @@
 import { fork } from 'child_process'
-
-export type RunCodeParams = {
-  path?: string;
-  key?: string;
-  payload?: string;
-  [key: string]: any
-}
-type RunCode = {
-  // 调用进程的功能
-  success?: boolean
-  data?: {
-    // 调用router的结果
-    code?: number
-    data?: any
-    message?: string
-    [key: string]: any
-  };
-  error?: any
-  timestamp?: string
-  [key: string]: any
-}
+import { ListenProcessParams, ListenProcessResponse } from '@/utils/listen-process.ts';
+export type RunCodeParams = ListenProcessParams
+export type RunCode = ListenProcessResponse
 export const runCode = async (tsPath: string, params: RunCodeParams = {}): Promise<RunCode> => {
   return new Promise((resolve, reject) => {
     // 使用 Bun 的 fork 模式启动子进程
@@ -52,8 +34,11 @@ import path from 'node:path'
 const res = await runCode(path.join(process.cwd(), './src/test/mini.ts'), {
   // path: 'main'
   // id: 'abc'
-  path: 'router',
-  key: 'list'
+  message: {
+    path: 'router',
+    key: 'list'
+  }
 })
 
-console.log('res', res.data.data.list)
+console.log('success', res)
+console.log('res', res.data?.data?.list)

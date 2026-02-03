@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      es-toolkit:
+        specifier: ^1.44.0
+        version: 1.44.0
     devDependencies:
       '@kevisual/context':
         specifier: ^0.0.4
@@ -774,6 +778,9 @@ packages:
 
   es-module-lexer@2.0.0:
     resolution: {integrity: sha512-5POEcUuZybH7IdmGsD8wlf0AI55wMecM9rVBTI/qEAy2c1kTOm3DjFYjrBdI2K3BaJjJYfYFeRtM0t9ssnRuxw==}
+
+  es-toolkit@1.44.0:
+    resolution: {integrity: sha512-6penXeZalaV88MM3cGkFZZfOoLGWshWWfdy0tWw/RlVVyhvMaWSBTOvXNeiW3e5FwdS5ePW0LGEu17zT139ktg==}
 
   esbuild@0.27.2:
     resolution: {integrity: sha512-HyNQImnsOC7X9PMNaCIeAm4ISCQXs5a5YasTXVliKv4uuBo1dKrG0A+uQS8M5eXjVMnLg3WgXaKvprHlFJQffw==}
@@ -1724,6 +1731,8 @@ snapshots:
       tapable: 2.3.0
 
   es-module-lexer@2.0.0: {}
+
+  es-toolkit@1.44.0: {}
 
   esbuild@0.27.2:
     optionalDependencies:
