@@ -680,7 +680,7 @@ export class QueryRouter {
           });
           ctx.body = {
             list: list.map((item) => {
-              const route = pick(item, ['id', 'path', 'key', 'description', 'middleware'] as const);
+              const route = pick(item, ['id', 'path', 'key', 'description', 'middleware', 'metadata'] as const);
               return toJSONSchema(route);
             }),
             isUser
