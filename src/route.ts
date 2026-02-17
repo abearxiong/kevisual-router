@@ -3,7 +3,6 @@ import { CustomError } from './result/error.ts';
 import { pick } from './utils/pick.ts';
 import { listenProcess, MockProcess } from './utils/listen-process.ts';
 import { z } from 'zod';
-import { filter } from '@kevisual/js-filter'
 
 export type RouterContextT = { code?: number;[key: string]: any };
 export type RouteContext<T = { code?: number }, S = any> = {
@@ -14,6 +13,7 @@ export type RouteContext<T = { code?: number }, S = any> = {
   appId?: string;
   // run first
   query?: { [key: string]: any };
+  args?: { [key: string]: any };
   // response body
   /** return body */
   body?: number | string | Object;
@@ -405,15 +405,15 @@ export class QueryRouter {
               console.error('=====debug====:middlerware error');
               console.error('=====debug====:', e);
               console.error('=====debug====:[path:key]:', `${route.path}-${route.key}`);
-              console.error('=====debug====:', e.message);
             }
             if (e instanceof CustomError || e?.code) {
               ctx.code = e.code;
               ctx.message = e.message;
               ctx.body = null;
             } else {
-              console.error(`fn:${route.path}-${route.key}:${route.id}`);
-              console.error(`middleware:${middleware.path}-${middleware.key}:${middleware.id}`);
+              console.error(`[router error] fn:${route.path}-${route.key}:${route.id}`);
+              console.error(`[router error] middleware:${middleware.path}-${middleware.key}:${middleware.id}`);
+              console.error(e)
               ctx.code = 500;
               ctx.message = 'Internal Server Error';
               ctx.body = null;
@@ -432,14 +432,16 @@ export class QueryRouter {
           await route.run(ctx as Required<RouteContext>);
         } catch (e) {
           if (route?.isDebug) {
-            console.error('=====debug====:', 'router run error:', e.message);
+            console.error('=====debug====:route error');
+            console.error('=====debug====:', e);
+            console.error('=====debug====:[path:key]:', `${route.path}-${route.key}`);
           }
           if (e instanceof CustomError) {
             ctx.code = e.code;
             ctx.message = e.message;
           } else {
-            console.error(`[error]fn:${route.path}-${route.key}:${route.id}`);
-            console.error('error', e.message);
+            console.error(`[router error] fn:${route.path}-${route.key}:${route.id}`);
+            console.error(`[router error] error`, e);
             ctx.code = 500;
             ctx.message = 'Internal Server Error';
           }
@@ -469,6 +471,7 @@ export class QueryRouter {
             return ctx;
           }
           ctx.query = { ...ctx.query, ...ctx.nextQuery };
+          ctx.args = ctx.query;
           ctx.nextQuery = {};
           return await this.runRoute(path, key, ctx);
         }
@@ -496,6 +499,7 @@ export class QueryRouter {
     const { path, key = '', payload = {}, ...query } = message;
     ctx = ctx || {};
     ctx.query = { ...ctx.query, ...query, ...payload };
+    ctx.args = ctx.query;
     ctx.state = { ...ctx?.state };
     ctx.throw = this.throw;
     ctx.app = this;
