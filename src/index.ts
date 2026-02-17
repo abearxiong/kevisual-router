@@ -4,7 +4,7 @@ export type { Rule, Schema, } from './validator/index.ts';
 
 export { createSchema } from './validator/index.ts';
 
-export type { RouteContext, RouteOpts, RouteMiddleware } from './route.ts';
+export type { RouteContext, RouteOpts, RouteInfo, RouteMiddleware } from './route.ts';
 
 export type { Run, Skill } from './route.ts';
 
