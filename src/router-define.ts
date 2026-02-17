@@ -1,4 +1,4 @@
-import type { QueryRouterServer, RouteOpts, Run, RouteMiddleware } from '@kevisual/router';
+import type { QueryRouterServer, RouteOpts, Run, RouteMiddleware } from './route.ts';
 import type { DataOpts, Query, Result } from '@kevisual/query/query';
 // export type RouteObject<T extends readonly string[]> = {
 //   [K in T[number]]: RouteOpts;

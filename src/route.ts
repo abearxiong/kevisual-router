@@ -1,9 +1,8 @@
-import { nanoid } from 'nanoid';
 import { CustomError } from './result/error.ts';
 import { pick } from './utils/pick.ts';
 import { listenProcess, MockProcess } from './utils/listen-process.ts';
 import { z } from 'zod';
-
+import { randomId } from './utils/random.ts';
 export type RouterContextT = { code?: number;[key: string]: any };
 export type RouteContext<T = { code?: number }, S = any> = {
   /**
@@ -114,6 +113,7 @@ export const createSkill = <T = SimpleObject>(skill: Skill<T>): Skill<T> => {
 }
 
 export type RouteInfo = Pick<Route, (typeof pickValue)[number]>;
+
 export class Route<U = { [key: string]: any }, T extends SimpleObject = SimpleObject> {
   /**
    * 一级路径
@@ -137,14 +137,14 @@ export class Route<U = { [key: string]: any }, T extends SimpleObject = SimpleOb
   isDebug?: boolean;
   constructor(path: string = '', key: string = '', opts?: RouteOpts) {
     if (!path) {
-      path = nanoid(8)
+      path = randomId(8, 'rand-');
     }
     path = path.trim();
     key = key.trim();
     this.path = path;
     this.key = key;
     if (opts) {
-      this.id = opts.id || nanoid();
+      this.id = opts.id || randomId(12, 'rand-');
       if (!opts.id && opts.idUsePath) {
         const delimiter = opts.delimiter ?? '$#$';
         this.id = path + delimiter + key;
@@ -159,7 +159,7 @@ export class Route<U = { [key: string]: any }, T extends SimpleObject = SimpleOb
       this.path = opts.path || path;
     } else {
       this.middleware = [];
-      this.id = nanoid();
+      this.id = randomId(12, 'rand-');
     }
     this.isDebug = opts?.isDebug ?? false;
   }
@@ -215,10 +215,10 @@ export class Route<U = { [key: string]: any }, T extends SimpleObject = SimpleOb
     return this;
   }
 
-  update(opts: DefineRouteOpts, checkList?: string[]): this {
+  update(opts: DefineRouteOpts, onlyUpdateList?: string[]): this {
     const keys = Object.keys(opts);
     const defaultCheckList = ['path', 'key', 'run', 'nextRoute', 'description', 'metadata', 'middleware', 'type', 'isDebug'];
-    checkList = checkList || defaultCheckList;
+    const checkList = onlyUpdateList || defaultCheckList;
     for (let item of keys) {
       if (!checkList.includes(item)) {
         continue;
@@ -316,8 +316,8 @@ export class QueryRouter {
    * remove route by id
    * @param uniqueId
    */
-  removeById(unique: string) {
-    this.routes = this.routes.filter((r) => r.id !== unique);
+  removeById(uniqueId: string) {
+    this.routes = this.routes.filter((r) => r.id !== uniqueId);
   }
   /**
    * 执行route
@@ -724,7 +724,7 @@ export class QueryRouterServer extends QueryRouter {
     if (opts?.appId) {
       this.appId = opts.appId;
     } else {
-      this.appId = nanoid(16);
+      this.appId = randomId(16);
     }
   }
   setHandle(wrapperFn?: HandleFn, ctx?: RouteContext) {

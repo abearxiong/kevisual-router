@@ -6,7 +6,7 @@ import { handleServer } from './server/handle-server.ts';
 import { IncomingMessage, ServerResponse } from 'http';
 import { isBun } from './utils/is-engine.ts';
 import { BunServer } from './server/server-bun.ts';
-import { nanoid } from 'nanoid';
+import { randomId } from './utils/random.ts';
 
 type RouterHandle = (msg: { path: string;[key: string]: any }) => { code: string; data?: any; message?: string;[key: string]: any };
 type AppOptions<T = {}> = {
@@ -48,7 +48,7 @@ export class App<U = {}> extends QueryRouter {
     if (opts?.appId) {
       this.appId = opts.appId;
     } else {
-      this.appId = nanoid(16);
+      this.appId = randomId(16, 'rand-');
     }
     router.appId = this.appId;
   }

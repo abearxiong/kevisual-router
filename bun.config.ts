@@ -1,24 +1,15 @@
-import path from 'node:path';
-import pkg from './package.json';
-import fs from 'node:fs';
-import { execSync } from 'node:child_process';
-const w = (p: string) => path.resolve(import.meta.dir, p);
+import { buildWithBun } from '@kevisual/code-builder';
 
-const external: string[] = ["bun"];
-await Bun.build({
-  target: 'node',
-  format: 'esm',
-  entrypoints: [w('./agent/main.ts')],
-  outdir: w('./dist'),
-  naming: {
-    entry: 'app.js',
-  },
-  define: {},
-  external
-});
+await buildWithBun({ naming: 'app', entry: 'agent/main.ts', dts: true });
 
-const cmd = 'dts -i ./agent/main.ts -o /app.d.ts';
+await buildWithBun({ naming: 'router', entry: 'src/index.ts', dts: true });
 
-execSync(cmd, { stdio: 'inherit' });
+await buildWithBun({ naming: 'router-browser', entry: 'src/app-browser.ts', target: 'browser', dts: true });
 
-// Copy package.json to dist
+await buildWithBun({ naming: 'router-define', entry: 'src/router-define.ts', target: 'browser', dts: true });
+
+await buildWithBun({ naming: 'router-simple', entry: 'src/router-simple.ts', dts: true });
+
+await buildWithBun({ naming: 'opencode', entry: 'src/opencode.ts', dts: true });
+
+await buildWithBun({ naming: 'ws', entry: 'src/ws.ts', dts: true });
