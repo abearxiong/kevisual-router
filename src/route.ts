@@ -97,6 +97,7 @@ export type Skill<T = SimpleObject> = {
   skill: string;
   title: string;
   summary?: string;
+  tags?: string[];
   args?: {
     [key: string]: any
   };
@@ -106,6 +107,12 @@ export const tool = {
 }
 /** */
 export const createSkill = <T = SimpleObject>(skill: Skill<T>): Skill<T> => {
+  if (skill.tags) {
+    const hasOpencode = skill.tags.includes('opencode');
+    if (!hasOpencode) {
+      skill.tags.push('opencode');
+    }
+  }
   return {
     args: {},
     ...skill
@@ -247,6 +254,10 @@ export const toJSONSchema = (route: RouteInfo) => {
   const pickValues = pick(route, pickValue as any);
   if (pickValues?.metadata?.args) {
     const args = pickValues.metadata.args;
+    if (args && typeof args === 'object' && args.toJSONSchema && typeof args.toJSONSchema === 'function') {
+      pickValues.metadata.args = args.toJSONSchema();
+      return pickValues;
+    }
     const keys = Object.keys(args);
     const newArgs: { [key: string]: any } = {};
     for (let key of keys) {
@@ -265,6 +276,11 @@ export const toJSONSchema = (route: RouteInfo) => {
 export const fromJSONSchema = (route: RouteInfo): RouteInfo => {
   const args = route?.metadata?.args;
   if (!args) return route;
+  if (args["$schema"] || (args.type === 'object' && args.properties && typeof args.properties === 'object')) {
+    // 可能是整个schema
+    route.metadata.args = z.fromJSONSchema(args);
+    return route;
+  }
   const keys = Object.keys(args);
   const newArgs: { [key: string]: any } = {};
   for (let key of keys) {

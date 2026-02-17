@@ -1,5 +1,5 @@
 import { useContextKey } from '@kevisual/context'
-import { createSkill, type QueryRouterServer, tool, type QueryRouter, type Skill } from './route.ts'
+import { createSkill, type QueryRouterServer, tool, type Skill } from './route.ts'
 import { type App } from './app.ts'
 import { PluginInput, type Plugin, Hooks } from "@opencode-ai/plugin"
 
@@ -15,8 +15,12 @@ export const addCallFn = (app: App) => {
       tags: ['opencode'],
       ...createSkill({
         skill: 'call-app',
-        title: '调用app应用',
-        summary: '调用router的应用, 参数path, key, payload',
+        title: '调用app应用,非技能模块',
+        summary: `调用router的应用(非技能模块)，适用于需要直接调用应用而不是技能的场景
+条件1: 参数path(string), key(string), payload(object)
+条件2: 当前的应用调用的模式不是技能
+
+`,
         args: {
           path: tool.schema.string().describe('应用路径，例如 cnb'),
           key: tool.schema.string().optional().describe('应用key，例如 list-repos'),
@@ -42,7 +46,9 @@ export const createRouterAgentPluginFn = (opts?: {
   query?: string,
   hooks?: (plugin: PluginInput) => Promise<Hooks>
 }) => {
+  new Promise(resolve => setTimeout(resolve, 100)) // 等待路由加载
   let router = opts?.router
+
   if (!router) {
     const app = useContextKey<App>('app')
     router = app
@@ -59,13 +65,15 @@ export const createRouterAgentPluginFn = (opts?: {
   const _routes = filter(router.routes, opts?.query || '')
   const routes = _routes.filter(r => {
     const metadata = r.metadata as Skill
+    if (metadata && metadata.skill && metadata.summary) {
+      return true
+    }
     if (metadata && metadata.tags && metadata.tags.includes('opencode')) {
       return !!metadata.skill
     }
     return false
   });
-
-  // opencode run "查看系统信息"
+  // opencode run "使用技能查看系统信息"
   const AgentPlugin: Plugin = async (pluginInput) => {
     useContextKey<PluginInput>('plugin-input', () => pluginInput, true)
     const hooks = opts?.hooks ? await opts.hooks(pluginInput) : {}
@@ -74,10 +82,11 @@ export const createRouterAgentPluginFn = (opts?: {
       'tool': {
         ...routes.reduce((acc, route) => {
           const metadata = route.metadata as Skill
+          let args = extractArgs(metadata?.args)
           acc[metadata.skill!] = {
             name: metadata.title || metadata.skill,
             description: metadata.summary || '',
-            args: metadata.args || {},
+            args: args,
             async execute(args: Record<string, any>) {
               const res = await router.run({
                 path: route.path,
@@ -117,4 +126,17 @@ export const createRouterAgentPluginFn = (opts?: {
 
 export const usePluginInput = (): PluginInput => {
   return useContextKey<PluginInput>('plugin-input')
+}
+
+/**
+ * 如果args是z.object类型，拆分第一个Object的属性，比如z.object({ name: z.string(), age: z.number() })，拆分成{name: z.string(), age: z.number()}
+ * 如果args是普通对象，直接返回
+ * @param args 
+ * @returns
+ */
+export const extractArgs = (args: any) => {
+  if (args && typeof args === 'object' && typeof args.shape === 'object') {
+    return args.shape
+  }
+  return args || {}
 }

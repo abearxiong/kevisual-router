@@ -1,6 +1,7 @@
 import { app, createSkill, tool } from '../app.ts';
 import * as docs from '../gen/index.ts'
 import * as pkgs from '../../package.json' assert { type: 'json' };
+import z from 'zod';
 app.route({
   path: 'router-skill',
   key: 'create-route',
@@ -32,14 +33,47 @@ app.route({
   }
 }).addTo(app);
 
-// 调用router应用 path router-skill key version
+// 获取最新router版本号
 app.route({
   path: 'router-skill',
   key: 'version',
-  description: '获取路由技能版本',
+  description: '获取最新router版本号',
   middleware: ['auth'],
+  metadata: {
+    tags: ['opencode'],
+    ...createSkill({
+      skill: 'router-skill-version',
+      title: '获取最新router版本号',
+      summary: '获取最新router版本号',
+      args: {}
+    })
+  },
 }).define(async (ctx) => {
   ctx.body = {
     content: pkgs.version || 'unknown'
   }
 }).addTo(app);
+
+// 执行技能test-route-skill,name为abearxiong
+app.route({
+  path: 'route-skill',
+  key: 'test',
+  description: '测试路由技能',
+  middleware: ['auth'],
+  metadata: {
+    tags: ['opencode'],
+    ...createSkill({
+      skill: 'test-route-skill',
+      title: '测试路由技能',
+      summary: '测试路由技能是否正常工作',
+      args: z.object({
+        name: z.string().describe('名字'),
+      })
+    })
+  },
+}).define(async (ctx) => {
+  const name = ctx.query.name || 'unknown';
+  ctx.body = {
+    content: '测试成功,你好 ' + name
+  }
+}).addTo(app)
