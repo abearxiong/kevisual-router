@@ -663,14 +663,28 @@ export class QueryRouter {
       return false;
     });
   }
-  createRouteList(force: boolean = false, filter?: (route: Route) => boolean) {
+  createRouteList(opts?: { force?: boolean, filter?: (route: Route) => boolean, middleware?: string[] }) {
     const hasListRoute = this.hasRoute('router', 'list');
-    if (!hasListRoute || force) {
+    if (!hasListRoute || opts?.force) {
       const listRoute = new Route('router', 'list', {
         description: '列出当前应用下的所有的路由信息',
+        middleware: opts?.middleware || [],
         run: async (ctx: RouteContext) => {
-          const list = this.getList(filter);
-          ctx.body = { list };
+          const tokenUser = ctx.state.tokenUser;
+          let isUser = !!tokenUser;
+          const list = this.getList(opts?.filter).filter((item) => {
+            if (item.id === 'auth' || item.id === 'auth-can' || item.id === 'check-auth-admin' || item.id === 'auth-admin') {
+              return false;
+            }
+            return true;
+          });
+          ctx.body = {
+            list: list.map((item) => {
+              const route = pick(item, ['id', 'path', 'key', 'description', 'middleware'] as const);
+              return toJSONSchema(route);
+            }),
+            isUser
+          };
         },
       });
       this.add(listRoute);
@@ -690,10 +704,11 @@ export class QueryRouter {
     getList?: boolean
     force?: boolean
     filter?: (route: Route) => boolean
+    routeListMiddleware?: string[]
   }) {
     const getList = opts?.getList ?? true;
     if (getList) {
-      this.createRouteList(opts?.force ?? false, opts?.filter);
+      this.createRouteList({ force: opts?.force, filter: opts?.filter, middleware: opts?.routeListMiddleware });
     }
     return listenProcess({ app: this as any, params, ...opts });
   }
