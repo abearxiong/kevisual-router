@@ -320,7 +320,8 @@ export const fromJSONSchema = <Merge extends boolean = true>(args: any = {}, opt
     const newArgs: { [key: string]: any } = {};
     for (let key of keys) {
       const item = args[key];
-      newArgs[key] = z.fromJSONSchema(item);
+      // fromJSONSchema 可能会失败，所以先 optional，等使用的时候再验证
+      newArgs[key] = z.fromJSONSchema(item).optional();
     }
     resultArgs = newArgs;
   }
