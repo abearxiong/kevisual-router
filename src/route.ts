@@ -245,7 +245,7 @@ export class Route<U = { [key: string]: any }, T extends SimpleObject = SimpleOb
     throw new CustomError(...args);
   }
 }
-export const extractArgs = (args: any) => {
+const extractArgs = (args: any) => {
   if (args && typeof args === 'object' && typeof args.shape === 'object') {
     return args.shape as z.ZodRawShape;
   }
@@ -286,11 +286,20 @@ const fromJSONSchemaRoute = (route: RouteInfo): RouteInfo => {
  * @param args 
  * @returns 
  */
-export const toJSONSchema = (args: any): { [key: string]: any } => {
+export const toJSONSchema = (args: any, opts?: { mergeObject?: boolean }): { [key: string]: any } => {
+  const mergeObject = opts?.mergeObject ?? true;
+  if (!args) return {};
+  if (mergeObject) {
+    if (typeof args === 'object' && typeof args.toJSONSchema === 'function') {
+      return args.toJSONSchema();
+    }
+    const schema = z.object(args);
+    return schema.toJSONSchema();
+  }
   // 如果 args 本身是一个 zod object schema，先提取 shape
   args = extractArgs(args);
   const keys = Object.keys(args);
-  const newArgs: { [key: string]: any } = {};
+  let newArgs: { [key: string]: any } = {};
   for (let key of keys) {
     const item = args[key] as z.ZodAny;
     if (item && typeof item === 'object' && typeof item.toJSONSchema === 'function') {
