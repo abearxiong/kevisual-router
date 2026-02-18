@@ -245,14 +245,20 @@ export class Route<U = { [key: string]: any }, T extends SimpleObject = SimpleOb
     throw new CustomError(...args);
   }
 }
+export const extractArgs = (args: any) => {
+  if (args && typeof args === 'object' && typeof args.shape === 'object') {
+    return args.shape as z.ZodRawShape;
+  }
+  return args || {};
+};
+
 export const toJSONSchema = (route: RouteInfo) => {
   const pickValues = pick(route, pickValue as any);
   if (pickValues?.metadata?.args) {
-    const args = pickValues.metadata.args;
-    if (args && typeof args === 'object' && args.toJSONSchema && typeof args.toJSONSchema === 'function') {
-      pickValues.metadata.args = args.toJSONSchema();
-      return pickValues;
-    }
+    let args = pickValues.metadata.args;
+    // 如果 args 本身是一个 zod object schema，先提取 shape
+    args = extractArgs(args);
+
     const keys = Object.keys(args);
     const newArgs: { [key: string]: any } = {};
     for (let key of keys) {

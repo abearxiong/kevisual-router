@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/package",
   "name": "@kevisual/router",
-  "version": "0.0.75",
+  "version": "0.0.76",
   "description": "",
   "type": "module",
   "main": "./dist/router.js",
@@ -21,7 +21,6 @@
   "keywords": [],
   "author": "abearxiong",
   "license": "MIT",
-  "packageManager": "pnpm@10.30.0",
   "devDependencies": {
     "@kevisual/code-builder": "^0.0.6",
     "@kevisual/context": "^0.0.6",
