@@ -13,7 +13,7 @@
         "@kevisual/dts": "^0.0.4",
         "@kevisual/js-filter": "^0.0.5",
         "@kevisual/local-proxy": "^0.0.8",
-        "@kevisual/query": "^0.0.46",
+        "@kevisual/query": "^0.0.47",
         "@kevisual/use-config": "^1.0.30",
         "@opencode-ai/plugin": "^1.2.6",
         "@types/bun": "^1.3.9",
@@ -53,7 +53,7 @@
 
     "@kevisual/local-proxy": ["@kevisual/local-proxy@0.0.8", "", {}, "sha512-VX/P+6/Cc8ruqp34ag6gVX073BchUmf5VNZcTV/6MJtjrNE76G8V6TLpBE8bywLnrqyRtFLIspk4QlH8up9B5Q=="],
 
-    "@kevisual/query": ["@kevisual/query@0.0.46", "", {}, "sha512-JwHV16ehk8JWM5wiWW5kz9yTg4HrOmmnci5QvwQYdhXYXDzGpUrOxeoz3wloMs4kX3bkowz97iLLW6uQdgUoTw=="],
+    "@kevisual/query": ["@kevisual/query@0.0.47", "", {}, "sha512-ZR7WXeDDGUSzBtcGVU3J173sA0hCqrGTw5ybGbdNGlM0VyJV/XQIovCcSoZh1YpnciLRRqJvzXUgTnCkam+M3g=="],
 
     "@kevisual/use-config": ["@kevisual/use-config@1.0.30", "", { "dependencies": { "@kevisual/load": "^0.0.6" }, "peerDependencies": { "dotenv": "^17" } }, "sha512-kPdna0FW/X7D600aMdiZ5UTjbCo6d8d4jjauSc8RMmBwUU6WliFDSPUNKVpzm2BsDX5Nth1IXFPYMqH+wxqAmw=="],
 
