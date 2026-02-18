@@ -137,7 +137,6 @@ export class Route<U = { [key: string]: any }, T extends SimpleObject = SimpleOb
   metadata?: T;
   middleware?: RouteMiddleware[]; // middleware
   type? = 'route';
-  data?: any;
   /**
    * 是否开启debug，开启后会打印错误信息
    */
@@ -240,10 +239,6 @@ export class Route<U = { [key: string]: any }, T extends SimpleObject = SimpleOb
   }
   addTo(router: QueryRouter | { add: (route: Route) => void;[key: string]: any }, opts?: AddOpts) {
     router.add(this, opts);
-  }
-  setData(data: any) {
-    this.data = data;
-    return this;
   }
   throw(code?: number | string, message?: string, tips?: string): void;
   throw(...args: any[]) {
