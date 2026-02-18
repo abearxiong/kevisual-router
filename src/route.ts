@@ -3,6 +3,8 @@ import { pick } from './utils/pick.ts';
 import { listenProcess, MockProcess } from './utils/listen-process.ts';
 import { z } from 'zod';
 import { randomId } from './utils/random.ts';
+import * as schema from './validator/schema.ts';
+
 export type RouterContextT = { code?: number;[key: string]: any };
 export type RouteContext<T = { code?: number }, S = any> = {
   /**
@@ -245,101 +247,17 @@ export class Route<U = { [key: string]: any }, T extends SimpleObject = SimpleOb
     throw new CustomError(...args);
   }
 }
-const extractArgs = (args: any) => {
-  if (args && typeof args === 'object' && typeof args.shape === 'object') {
-    return args.shape as z.ZodRawShape;
-  }
-  return args || {};
-};
 
 const toJSONSchemaRoute = (route: RouteInfo) => {
   const pickValues = pick(route, pickValue as any);
   if (pickValues?.metadata?.args) {
-    let args = pickValues.metadata.args;
-    // 如果 args 本身是一个 zod object schema，先提取 shape
-    args = extractArgs(args);
-
-    const keys = Object.keys(args);
-    const newArgs: { [key: string]: any } = {};
-    for (let key of keys) {
-      const item = args[key] as z.ZodAny;
-      if (item && typeof item === 'object' && typeof item.toJSONSchema === 'function') {
-        newArgs[key] = item.toJSONSchema();
-      } else {
-        newArgs[key] = args[key]; // 可能不是schema
-      }
-    }
-    pickValues.metadata.args = newArgs;
+    pickValues.metadata.args = toJSONSchema(pickValues?.metadata?.args, { mergeObject: false });
   }
   return pickValues;
 }
-const fromJSONSchemaRoute = (route: RouteInfo): RouteInfo => {
-  const args = route?.metadata?.args;
-  if (!args) return route;
-  const newArgs = fromJSONSchema(args);
-  route.metadata.args = newArgs;
-  return route;
-}
 
-/**
- * 剥离第一层schema，转换为JSON Schema，无论是skill还是其他的infer比纯粹的zod object schema更合适，因为它可能包含其他的字段，而不仅仅是schema
- * @param args 
- * @returns 
- */
-export const toJSONSchema = (args: any, opts?: { mergeObject?: boolean }): { [key: string]: any } => {
-  const mergeObject = opts?.mergeObject ?? true;
-  if (!args) return {};
-  if (mergeObject) {
-    if (typeof args === 'object' && typeof args.toJSONSchema === 'function') {
-      return args.toJSONSchema();
-    }
-    const schema = z.object(args);
-    return schema.toJSONSchema();
-  }
-  // 如果 args 本身是一个 zod object schema，先提取 shape
-  args = extractArgs(args);
-  const keys = Object.keys(args);
-  let newArgs: { [key: string]: any } = {};
-  for (let key of keys) {
-    const item = args[key] as z.ZodAny;
-    if (item && typeof item === 'object' && typeof item.toJSONSchema === 'function') {
-      newArgs[key] = item.toJSONSchema();
-    } else {
-      newArgs[key] = args[key]; // 可能不是schema
-    }
-  }
-  return newArgs;
-}
-export const fromJSONSchema = <Merge extends boolean = true>(args: any = {}, opts?: { mergeObject?: boolean }) => {
-  let resultArgs: any = null;
-  const mergeObject = opts?.mergeObject ?? true;
-  if (args["$schema"] || (args.type === 'object' && args.properties && typeof args.properties === 'object')) {
-    // 可能是整个schema
-    const objectSchema = z.fromJSONSchema(args);
-    const extract = extractArgs(objectSchema);
-    const keys = Object.keys(extract);
-    const newArgs: { [key: string]: any } = {};
-    for (let key of keys) {
-      newArgs[key] = extract[key];
-    }
-    resultArgs = newArgs;
-  }
-  if (!resultArgs) {
-    const keys = Object.keys(args);
-    const newArgs: { [key: string]: any } = {};
-    for (let key of keys) {
-      const item = args[key];
-      // fromJSONSchema 可能会失败，所以先 optional，等使用的时候再验证
-      newArgs[key] = z.fromJSONSchema(item).optional();
-    }
-    resultArgs = newArgs;
-  }
-  if (mergeObject) {
-    resultArgs = z.object(resultArgs);
-  }
-  type ResultArgs = Merge extends true ? z.ZodObject<{ [key: string]: any }> : { [key: string]: z.ZodTypeAny };
-  return resultArgs as unknown as ResultArgs;
-}
+export const toJSONSchema = schema.toJSONSchema;
+export const fromJSONSchema = schema.fromJSONSchema;
 
 /**
  * @parmas overwrite 是否覆盖已存在的route，默认true
@@ -657,21 +575,6 @@ export class QueryRouter {
   getList(filter?: (route: Route) => boolean): RouteInfo[] {
     return this.routes.filter(filter || (() => true)).map((r) => {
       const pickValues = pick(r, pickValue as any);
-      if (pickValues?.metadata?.args) {
-        // const demoArgs = { k: tool.schema.string().describe('示例参数') };
-        const args = pickValues.metadata.args;
-        const keys = Object.keys(args);
-        const newArgs: { [key: string]: any } = {};
-        for (let key of keys) {
-          const item = args[key] as z.ZodAny;
-          if (item && typeof item === 'object' && typeof item.toJSONSchema === 'function') {
-            newArgs[key] = item.toJSONSchema();
-          } else {
-            newArgs[key] = args[key]; // 可能不是schema
-          }
-        }
-        pickValues.metadata.args = newArgs;
-      }
       return pickValues;
     });
   }
