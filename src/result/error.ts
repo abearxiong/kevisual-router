@@ -1,20 +1,21 @@
+type CustomErrorOptions = {
+  cause?: Error | string;
+  code?: number;
+  message?: string;
+}
 /** 自定义错误 */
 export class CustomError extends Error {
   code?: number;
   data?: any;
   message: string;
-  tips?: string;
-  constructor(code?: number | string, message?: string, tips?: string) {
-    super(message || String(code));
-    this.name = 'CustomError';
-    if (typeof code === 'number') {
-      this.code = code;
-      this.message = message!;
-    } else {
-      this.code = 500;
-      this.message = code!;
-    }
-    this.tips = tips;
+  constructor(code?: number | string, opts?: CustomErrorOptions) {
+    let message = opts?.message || String(code);
+    const cause = opts?.cause;
+    super(message, { cause });
+    this.name = 'RouterError';
+    let codeNum = opts?.code || (typeof code === 'number' ? code : undefined);
+    this.code = codeNum ?? 500;
+    this.message = message!;
     // 这一步可不写，默认会保存堆栈追踪信息到自定义错误构造函数之前，
     // 而如果写成 `Error.captureStackTrace(this)` 则自定义错误的构造函数也会被保存到堆栈追踪信息
     Error.captureStackTrace(this, this.constructor);
@@ -31,8 +32,7 @@ export class CustomError extends Error {
     return {
       code: e?.code,
       data: e?.data,
-      message: e?.message,
-      tips: e?.tips,
+      message: e?.message
     };
   }
   /**
@@ -52,7 +52,6 @@ export class CustomError extends Error {
         code: e?.code,
         data: e?.data,
         message: e?.message,
-        tips: e?.tips,
       };
     }
   }
