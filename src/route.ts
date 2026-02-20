@@ -1,4 +1,4 @@
-import { CustomError } from './result/error.ts';
+import { CustomError, CustomErrorOptions } from './result/error.ts';
 import { pick } from './utils/pick.ts';
 import { listenProcess, MockProcess } from './utils/listen-process.ts';
 import { z } from 'zod';
@@ -610,9 +610,21 @@ export class QueryRouter {
   importRouter(router: QueryRouter) {
     this.importRoutes(router.routes);
   }
-  throw(code?: number | string, message?: string, tips?: string): void;
+  throw(code?: number | string, message?: string): void;
+  throw(code?: number | string, opts?: CustomErrorOptions): void;
+  throw(opts?: CustomErrorOptions): void;
   throw(...args: any[]) {
-    throw new CustomError(...args);
+    const [args0, args1] = args;
+    if (args0 && typeof args0 === 'object') {
+      throw new CustomError(args0);
+    }
+    if (args1 && typeof args1 === 'object') {
+      throw new CustomError(args0, args1);
+    } else if (args1) {
+      throw new CustomError(args0, { message: args1 });
+    }
+    // args1 不存在;
+    throw new CustomError(args0);
   }
   hasRoute(path: string, key: string = '') {
     return this.routes.find((r) => r.path === path && r.key === key);

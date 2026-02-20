@@ -1,4 +1,4 @@
-type CustomErrorOptions = {
+export type CustomErrorOptions = {
   cause?: Error | string;
   code?: number;
   message?: string;
@@ -8,7 +8,11 @@ export class CustomError extends Error {
   code?: number;
   data?: any;
   message: string;
-  constructor(code?: number | string, opts?: CustomErrorOptions) {
+  constructor(code?: number | string | CustomErrorOptions, opts?: CustomErrorOptions) {
+    if (typeof code === 'object' && code !== null) {
+      opts = code;
+      code = opts.code || 500;
+    }
     let message = opts?.message || String(code);
     const cause = opts?.cause;
     super(message, { cause });
