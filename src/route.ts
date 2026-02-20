@@ -1,4 +1,4 @@
-import { CustomError, CustomErrorOptions } from './result/error.ts';
+import { CustomError, throwError, CustomErrorOptions } from './result/error.ts';
 import { pick } from './utils/pick.ts';
 import { listenProcess, MockProcess } from './utils/listen-process.ts';
 import { z } from 'zod';
@@ -56,7 +56,7 @@ export type RouteContext<T = { code?: number }, S = any> = {
   /** 请求 route的返回结果，解析了body为data，就类同于 query.post获取的数据*/
   run?: (message: { path: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) => Promise<any>;
   index?: number;
-  throw?: (code?: number | string, message?: string, tips?: string) => void;
+  throw?: throwError['throw'];
   /** 是否需要序列化, 使用JSON.stringify和JSON.parse */
   needSerialize?: boolean;
 } & T;
@@ -123,7 +123,7 @@ export const createSkill = <T = SimpleObject>(skill: Skill<T>): Skill<T> => {
 
 export type RouteInfo = Pick<Route, (typeof pickValue)[number]>;
 
-export class Route<U = { [key: string]: any }, T extends SimpleObject = SimpleObject> {
+export class Route<U = { [key: string]: any }, T extends SimpleObject = SimpleObject> implements throwError {
   /**
    * 一级路径
    */
@@ -242,9 +242,8 @@ export class Route<U = { [key: string]: any }, T extends SimpleObject = SimpleOb
   addTo(router: QueryRouter | { add: (route: Route) => void;[key: string]: any }, opts?: AddOpts) {
     router.add(this, opts);
   }
-  throw(code?: number | string, message?: string, tips?: string): void;
   throw(...args: any[]) {
-    throw new CustomError(...args);
+    CustomError.throw(...args);
   }
 }
 
@@ -263,7 +262,7 @@ export const fromJSONSchema = schema.fromJSONSchema;
  * @parmas overwrite 是否覆盖已存在的route，默认true
  */
 export type AddOpts = { overwrite?: boolean };
-export class QueryRouter {
+export class QueryRouter implements throwError {
   appId: string = '';
   routes: Route[];
   maxNextRoute = 40;
@@ -610,21 +609,8 @@ export class QueryRouter {
   importRouter(router: QueryRouter) {
     this.importRoutes(router.routes);
   }
-  throw(code?: number | string, message?: string): void;
-  throw(code?: number | string, opts?: CustomErrorOptions): void;
-  throw(opts?: CustomErrorOptions): void;
   throw(...args: any[]) {
-    const [args0, args1] = args;
-    if (args0 && typeof args0 === 'object') {
-      throw new CustomError(args0);
-    }
-    if (args1 && typeof args1 === 'object') {
-      throw new CustomError(args0, args1);
-    } else if (args1) {
-      throw new CustomError(args0, { message: args1 });
-    }
-    // args1 不存在;
-    throw new CustomError(args0);
+    CustomError.throw(...args);
   }
   hasRoute(path: string, key: string = '') {
     return this.routes.find((r) => r.path === path && r.key === key);

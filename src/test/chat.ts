@@ -14,4 +14,4 @@ app.prompt('获取天气的工具。\n参数是 city 为对应的城市').define
 
 export const chat = new RouterChat({ router: app.router });
 
-console.log(chat.chat());
+console.log(chat.getChatPrompt());

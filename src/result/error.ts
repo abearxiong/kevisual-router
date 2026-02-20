@@ -47,6 +47,22 @@ export class CustomError extends Error {
   static isError(error: unknown): error is CustomError {
     return error instanceof CustomError || (typeof error === 'object' && error !== null && 'code' in error);
   }
+  static throw(code?: number | string, message?: string): void;
+  static throw(code?: number | string, opts?: CustomErrorOptions): void;
+  static throw(opts?: CustomErrorOptions): void;
+  static throw(...args: any[]) {
+    const [args0, args1] = args;
+    if (args0 && typeof args0 === 'object') {
+      throw new CustomError(args0);
+    }
+    if (args1 && typeof args1 === 'object') {
+      throw new CustomError(args0, args1);
+    } else if (args1) {
+      throw new CustomError(args0, { message: args1 });
+    }
+    // args1 不存在;
+    throw new CustomError(args0);
+  }
   parse(e?: CustomError) {
     if (e) {
       return CustomError.parseError(e);
@@ -59,6 +75,12 @@ export class CustomError extends Error {
       };
     }
   }
+}
+
+export interface throwError {
+  throw(code?: number | string, message?: string): void;
+  throw(code?: number | string, opts?: CustomErrorOptions): void;
+  throw(opts?: CustomErrorOptions): void;
 }
 
 /*
