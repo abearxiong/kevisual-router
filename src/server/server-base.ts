@@ -4,6 +4,7 @@ import * as cookie from './cookie.ts';
 import { ServerType, Listener, OnListener, ServerOpts, OnWebSocketOptions, OnWebSocketFn, WebSocketListenerFun, ListenerFun, HttpListenerFun, WS } from './server-type.ts';
 import { parseIfJson } from '../utils/parse.ts';
 import { EventEmitter } from 'eventemitter3';
+import { CustomError } from '../result/error.ts';
 type CookieFn = (name: string, value: string, options?: cookie.SerializeOptions, end?: boolean) => void;
 
 export type HandleCtx = {
@@ -165,8 +166,13 @@ export class ServerBase implements ServerType {
           res.end(JSON.stringify(end));
         }
       } catch (e) {
-        console.error(e);
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
+        if (CustomError.isError(e)) {
+          const parsedError = CustomError.parseError(e);
+          res.end(JSON.stringify(parsedError));
+          return;
+        }
+        console.error(e);
         if (e.code && typeof e.code === 'number') {
           res.end(resultError(e.message || `Router Server error`, e.code));
         } else {
