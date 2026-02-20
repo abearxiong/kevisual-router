@@ -10,7 +10,7 @@ export const addCallFn = (app: App) => {
     path: 'call',
     key: '',
     description: '调用',
-    middleware: ['auth'],
+    middleware: ['auth-admin'],
     metadata: {
       tags: ['opencode'],
       ...createSkill({
@@ -24,7 +24,7 @@ export const addCallFn = (app: App) => {
         args: {
           path: tool.schema.string().describe('应用路径，例如 cnb'),
           key: tool.schema.string().optional().describe('应用key，例如 list-repos'),
-          payload: tool.schema.object({}).optional().describe('调用参数'),
+          payload: tool.schema.object({}).optional().describe('调用参数, 为对象, 例如 { "query": "javascript" }'),
         }
       })
     },
@@ -75,7 +75,7 @@ export const createRouterAgentPluginFn = (opts?: {
   });
   // opencode run "使用技能查看系统信息"
   const AgentPlugin: Plugin = async (pluginInput) => {
-    useContextKey<PluginInput>('plugin-input', () => pluginInput, true)
+    useContextKey<PluginInput>('plugin-input', () => pluginInput, { isNew: true })
     const hooks = opts?.hooks ? await opts.hooks(pluginInput) : {}
     return {
       ...hooks,

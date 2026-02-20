@@ -6,7 +6,7 @@ app.route({
   path: 'router-skill',
   key: 'create-route',
   description: '创建路由技能',
-  middleware: ['auth'],
+  middleware: ['auth-admin'],
   metadata: {
     tags: ['opencode'],
     ...createSkill({
@@ -38,7 +38,7 @@ app.route({
   path: 'router-skill',
   key: 'version',
   description: '获取最新router版本号',
-  middleware: ['auth'],
+  middleware: ['auth-admin'],
   metadata: {
     tags: ['opencode'],
     ...createSkill({
@@ -59,7 +59,7 @@ app.route({
   path: 'route-skill',
   key: 'test',
   description: '测试路由技能',
-  middleware: ['auth'],
+  middleware: ['auth-admin'],
   metadata: {
     tags: ['opencode'],
     ...createSkill({
