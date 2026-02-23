@@ -31,75 +31,62 @@ app
 
 在 route handler 中，你可以通过 `ctx` 访问以下属性：
 
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| `query` | `object` | 请求参数，会自动合并 payload |
-| `body` | `number \| string \| Object` | 响应内容 |
-| `code` | `number` | 响应状态码，默认为 200 |
-| `message` | `string` | 响应消息 |
-| `state` | `any` | 状态数据，可在路由间传递 |
-| `appId` | `string` | 应用标识 |
-| `currentPath` | `string` | 当前路由路径 |
-| `currentKey` | `string` | 当前路由 key |
-| `currentRoute` | `Route` | 当前 Route 实例 |
-| `progress` | `[string, string][]` | 路由执行路径记录 |
-| `nextQuery` | `object` | 传递给下一个路由的参数 |
-| `end` | `boolean` | 是否提前结束路由执行 |
-| `app` | `QueryRouter` | 路由实例引用 |
-| `error` | `any` | 错误信息 |
-| `index` | `number` | 当前路由执行深度 |
-| `needSerialize` | `boolean` | 是否需要序列化响应数据 |
+| 属性            | 类型                         | 说明                         |
+| --------------- | ---------------------------- | ---------------------------- |
+| `query`         | `object`                     | 请求参数，会自动合并 payload |
+| `body`          | `number \| string \| Object` | 响应内容                     |
+| `code`          | `number`                     | 响应状态码，默认为 200       |
+| `message`       | `string`                     | 响应消息                     |
+| `state`         | `any`                        | 状态数据，可在路由间传递     |
+| `appId`         | `string`                     | 应用标识                     |
+| `currentId`     | `string`                     | 当前路由ID                   |
+| `currentPath`   | `string`                     | 当前路由路径                 |
+| `currentKey`    | `string`                     | 当前路由 key                 |
+| `currentRoute`  | `Route`                      | 当前 Route 实例              |
+| `progress`      | `[string, string][]`         | 路由执行路径记录             |
+| `nextQuery`     | `object`                     | 传递给下一个路由的参数       |
+| `end`           | `boolean`                    | 是否提前结束路由执行         |
+| `app`           | `QueryRouter`                | 路由实例引用                 |
+| `error`         | `any`                        | 错误信息                     |
+| `index`         | `number`                     | 当前路由执行深度             |
+| `needSerialize` | `boolean`                    | 是否需要序列化响应数据       |
 
 ### 上下文方法
 
-| 方法 | 参数 | 说明 |
-|------|------|------|
-| `ctx.call(msg, ctx?)` | `{ path, key?, payload?, ... } \| { id }` | 调用其他路由，返回完整 context |
-| `ctx.run(msg, ctx?)` | `{ path, key?, payload? }` | 调用其他路由，返回 `{ code, data, message }` |
-| `ctx.forward(res)` | `{ code, data?, message? }` | 设置响应结果 |
-| `ctx.throw(code?, message?, tips?)` | - | 抛出自定义错误 |
+| 方法                                | 参数                                      | 说明                                         |
+| ----------------------------------- | ----------------------------------------- | -------------------------------------------- |
+| `ctx.call(msg, ctx?)`               | `{ path, key?, payload?, ... } \| { id }` | 调用其他路由，返回完整 context               |
+| `ctx.run(msg, ctx?)`                | `{ path, key?, payload? }`                | 调用其他路由，返回 `{ code, data, message }` |
+| `ctx.forward(res)`                  | `{ code, data?, message? }`               | 设置响应结果                                 |
+| `ctx.throw(code?, message?, tips?)` | -                                         | 抛出自定义错误                               |
 
 ## 完整示例
 
 ```ts
 import { App } from '@kevisual/router';
-
+import z from 'zod';
 const app = new App();
 app.listen(4002);
 
 // 基本路由
 app
-  .route({ path: 'user', key: 'info' })
+  .route({ path: 'user', key: 'info', id: 'user-info' })
   .define(async (ctx) => {
     // ctx.query 包含请求参数
     const { id } = ctx.query;
+    // 使用 state 在路由间传递数据
+    ctx.state.orderId = '12345';
     ctx.body = { id, name: '张三' };
     ctx.code = 200;
   })
   .addTo(app);
 
-// 使用 state 在路由间传递数据
 app
-  .route({ path: 'order', key: 'create' })
-  .define(async (ctx) => {
-    ctx.state = { orderId: '12345' };
-  })
-  .addTo(app);
-
-app
-  .route({ path: 'order', key: 'pay' })
+  .route({ path: 'order', key: 'pay', middleware: ['user-info'] })
   .define(async (ctx) => {
     // 可以获取前一个路由设置的 state
     const { orderId } = ctx.state;
     ctx.body = { orderId, status: 'paid' };
-  })
-  .addTo(app);
-
-// 链式调用
-app
-  .route({ path: 'product', key: 'list' })
-  .define(async (ctx) => {
-    ctx.body = [{ id: 1, name: '商品A' }];
   })
   .addTo(app);
 
@@ -114,7 +101,7 @@ app
 
     ctx.body = {
       user: userRes.data,
-      products: productRes.data
+      products: productRes.data,
     };
   })
   .addTo(app);
@@ -140,17 +127,20 @@ import { App, Route } from '@kevisual/router';
 const app = new App();
 
 // 定义中间件
-app.route({
-  id: 'auth-example',
-  description: '权限校验中间件'
-}).define(async(ctx) => {
-  const token = ctx.query.token;
-  if (!token) {
-    ctx.throw(401, '未登录', '需要 token');
-  }
-  // 验证通过，设置用户信息到 state
-  ctx.state.tokenUser = { id: 1, name: '用户A' };
-}).addTo(app);
+app
+  .route({
+    id: 'auth-example',
+    description: '权限校验中间件',
+  })
+  .define(async (ctx) => {
+    const token = ctx.query.token;
+    if (!token) {
+      ctx.throw(401, '未登录', '需要 token');
+    }
+    // 验证通过，设置用户信息到 state
+    ctx.state.tokenUser = { id: 1, name: '用户A' };
+  })
+  .addTo(app);
 
 // 使用中间件（通过 id 引用）
 app
@@ -159,6 +149,33 @@ app
     // 可以访问中间件设置的 state
     const { tokenUser } = ctx.state;
     ctx.body = { tokenUser };
+  })
+  .addTo(app);
+```
+
+## 一个丰富的router示例
+
+```ts
+import { App } from '@kevisual/router';
+const app = new App();
+
+app
+  .router({
+    path: 'dog',
+    key: 'info',
+    description: '获取狗的信息',
+    metedata: {
+      args: {
+        owner: z.string().describe('狗主人姓名'),
+        age: z.number().describe('狗的年龄'),
+      },
+    },
+  })
+  .define(async (ctx) => {
+    const { owner, age } = ctx.query;
+    ctx.body = {
+      content: `这是一只${age}岁的狗，主人是${owner}`,
+    };
   })
   .addTo(app);
 ```
@@ -173,16 +190,14 @@ app
 
 3. **ctx.throw 会自动结束执行**，抛出自定义错误。
 
-4. **state 不会自动继承**，每个路由的 state 是独立的，除非显式传递或使用 nextRoute。
+4. **payload 会自动合并到 query**，调用 `ctx.run({ path, key, payload })` 时，payload 会合并到 query。
 
-5. **payload 会自动合并到 query**，调用 `ctx.run({ path, key, payload })` 时，payload 会合并到 query。
+5. **nextQuery 用于传递给 nextRoute**，在当前路由中设置 `ctx.nextQuery`，会在执行 nextRoute 时合并到 query。
 
-6. **nextQuery 用于传递给 nextRoute**，在当前路由中设置 `ctx.nextQuery`，会在执行 nextRoute 时合并到 query。
+6. **避免 nextRoute 循环调用**，默认最大深度为 40 次，超过会返回 500 错误。
 
-7. **避免 nextRoute 循环调用**，默认最大深度为 40 次，超过会返回 500 错误。
+7. **needSerialize 默认为 true**，会自动对 body 进行 JSON 序列化和反序列化。
 
-8. **needSerialize 默认为 true**，会自动对 body 进行 JSON 序列化和反序列化。
+8. **progress 记录执行路径**，可用于调试和追踪路由调用链。
 
-9. **progress 记录执行路径**，可用于调试和追踪路由调用链。
-
-10. **中间件找不到会返回 404**，错误信息中会包含找不到的中间件列表。
+9. **中间件找不到会返回 404**，错误信息中会包含找不到的中间件列表。

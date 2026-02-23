@@ -27,6 +27,10 @@ export type RouteContext<T = { code?: number }, S = any> = {
   state?: S;
   // transfer data
   /**
+   * 当前routerId
+   */
+  currentId?: string;
+  /**
    * 当前路径
    */
   currentPath?: string;
@@ -314,6 +318,7 @@ export class QueryRouter implements throwError {
     const maxNextRoute = this.maxNextRoute;
     ctx = (ctx || {}) as RouteContext;
     ctx.currentPath = path;
+    ctx.currentId = route?.id;
     ctx.currentKey = key;
     ctx.currentRoute = route;
     ctx.index = (ctx.index || 0) + 1;
