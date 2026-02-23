@@ -19,7 +19,7 @@ type AppOptions<T = {}> = {
   appId?: string;
 };
 
-export type AppRouteContext<T = {}> = HandleCtx & RouteContext<T> & { app: App<T> };
+export type AppRouteContext<T> = HandleCtx & RouteContext<T> & { app: App<T> };
 
 /**
  *  封装了 Router 和 Server 的 App 模块，处理http的请求和响应，内置了 Cookie 和 Token 和 res 的处理
@@ -29,6 +29,7 @@ export class App<U = {}> extends QueryRouterServer<AppRouteContext<U>> {
   declare appId: string;
   router: QueryRouterServer;
   server: ServerType;
+  declare context: AppRouteContext<U>;
   constructor(opts?: AppOptions<U>) {
     super({ initHandle: false, context: { needSerialize: true, ...opts?.routerContext } as any });
     const router = this;

@@ -23,7 +23,7 @@ type BuildRouteContext<M, U> = M extends { args?: infer A }
   : RouteContext<U>
   : RouteContext<U>;
 
-export type RouteContext<T = { code?: number }, S = any> = {
+export type RouteContext<T = { code?: number }, U extends SimpleObject = {}, S = { [key: string]: any }> = {
   /**
    * 本地自己调用的时候使用，可以标识为当前自调用，那么 auth 就不许重复的校验
    * 或者不需要登录的，直接调用
@@ -77,19 +77,19 @@ export type RouteContext<T = { code?: number }, S = any> = {
     ctx?: RouteContext & { [key: string]: any },
   ) => Promise<any>;
   /** 请求 route的返回结果，解析了body为data，就类同于 query.post获取的数据*/
-  run?: (message: { path: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) => Promise<any>;
+  run?: (message: { path: string; key?: string; payload?: any }, ctx?: RouteContext) => Promise<any>;
   index?: number;
   throw?: throwError['throw'];
   /** 是否需要序列化, 使用JSON.stringify和JSON.parse */
   needSerialize?: boolean;
-} & T;
+} & T & U;
 export type SimpleObject = Record<string, any>;
 export type Run<T extends SimpleObject = {}> = (ctx: Required<RouteContext<T>>) => Promise<typeof ctx | null | void>;
 export type RunMessage = { path?: string; key?: string; id?: string; payload?: any; };
 export type NextRoute = Pick<Route, 'id' | 'path' | 'key'>;
 export type RouteMiddleware =
   | {
-    path: string;
+    path?: string;
     key?: string;
     id?: string;
   }
@@ -148,7 +148,11 @@ export type RouteInfo = Pick<Route, (typeof pickValue)[number]>;
 
 type ExtractMetadata<M> = M extends { metadata?: infer Meta } ? Meta extends SimpleObject ? Meta : SimpleObject : SimpleObject;
 
-export class Route<M extends SimpleObject = SimpleObject, U extends SimpleObject = SimpleObject, T extends SimpleObject = SimpleObject> implements throwError {
+/**
+ * @M 是 route的 metadate的类型，默认是 SimpleObject
+ * @U 是 RouteContext 里 state的类型
+ */
+export class Route<M extends SimpleObject = SimpleObject, U extends SimpleObject = SimpleObject> implements throwError {
   /**
    * 一级路径
    */
@@ -287,11 +291,11 @@ export const fromJSONSchema = schema.fromJSONSchema;
  * @parmas overwrite 是否覆盖已存在的route，默认true
  */
 export type AddOpts = { overwrite?: boolean };
-export class QueryRouter implements throwError {
+export class QueryRouter<T extends SimpleObject = SimpleObject> implements throwError {
   appId: string = '';
   routes: Route[];
   maxNextRoute = 40;
-  context?: RouteContext = {}; // default context for call
+  context?: RouteContext<T> = {} as RouteContext<T>; // default context for call
   constructor() {
     this.routes = [];
   }
@@ -334,10 +338,10 @@ export class QueryRouter implements throwError {
    * @param ctx
    * @returns
    */
-  async runRoute(path: string, key: string, ctx?: RouteContext) {
+  async runRoute(path: string, key: string, ctx?: RouteContext<T>): Promise<RouteContext<T>> {
     const route = this.routes.find((r) => r.path === path && r.key === key);
     const maxNextRoute = this.maxNextRoute;
-    ctx = (ctx || {}) as RouteContext;
+    ctx = (ctx || {}) as RouteContext<T>;
     ctx.currentPath = path;
     ctx.currentId = route?.id;
     ctx.currentKey = key;
@@ -353,7 +357,7 @@ export class QueryRouter implements throwError {
       ctx.code = 500;
       ctx.message = 'Too many nextRoute';
       ctx.body = null;
-      return;
+      return ctx;
     }
     // run middleware
     if (route && route.middleware && route.middleware.length > 0) {
@@ -408,7 +412,7 @@ export class QueryRouter implements throwError {
         const middleware = routeMiddleware[i];
         if (middleware) {
           try {
-            await middleware.run(ctx as Required<RouteContext>);
+            await middleware.run(ctx as Required<RouteContext<T>>);
           } catch (e) {
             if (route?.isDebug) {
               console.error('=====debug====:middlerware error');
@@ -430,6 +434,7 @@ export class QueryRouter implements throwError {
             return ctx;
           }
           if (ctx.end) {
+            return ctx;
           }
         }
       }
@@ -438,7 +443,7 @@ export class QueryRouter implements throwError {
     if (route) {
       if (route.run) {
         try {
-          await route.run(ctx as Required<RouteContext>);
+          await route.run(ctx as Required<RouteContext<T>>);
         } catch (e) {
           if (route?.isDebug) {
             console.error('=====debug====:route error');
@@ -493,7 +498,7 @@ export class QueryRouter implements throwError {
       }
     }
     // 如果没有找到route，返回404，这是因为出现了错误
-    return Promise.resolve({ code: 404, body: 'Not found' });
+    return Promise.resolve({ code: 404, body: 'Not found' } as RouteContext<T>);
   }
   /**
    * 第一次执行
@@ -501,12 +506,12 @@ export class QueryRouter implements throwError {
    * @param ctx
    * @returns
    */
-  async parse(message: { path: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
+  async parse(message: { path: string; key?: string; payload?: any }, ctx?: RouteContext<T> & { [key: string]: any }) {
     if (!message?.path) {
-      return Promise.resolve({ code: 404, body: null, message: 'Not found path' });
+      return Promise.resolve({ code: 404, body: null, message: 'Not found path' } as RouteContext<T>);
     }
     const { path, key = '', payload = {}, ...query } = message;
-    ctx = ctx || {};
+    ctx = ctx || {} as RouteContext<T>;
     ctx.query = { ...ctx.query, ...query, ...payload };
     ctx.args = ctx.query;
     ctx.state = { ...ctx?.state };
@@ -540,7 +545,7 @@ export class QueryRouter implements throwError {
    * @param ctx
    * @returns
    */
-  async call(message: { id?: string; path?: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
+  async call(message: { id?: string; path?: string; key?: string; payload?: any }, ctx?: RouteContext<T> & { [key: string]: any }) {
     let path = message.path;
     let key = message.key;
     // 优先 path + key
@@ -581,7 +586,7 @@ export class QueryRouter implements throwError {
    * @param ctx 
    * @returns 
    */
-  async run(message: { id?: string; path?: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
+  async run(message: { id?: string; path?: string; key?: string; payload?: any }, ctx?: RouteContext<T> & { [key: string]: any }) {
     const res = await this.call(message, { ...this.context, ...ctx });
     return {
       code: res.code,
@@ -595,7 +600,7 @@ export class QueryRouter implements throwError {
    * @param ctx
    */
   setContext(ctx: RouteContext) {
-    this.context = ctx;
+    this.context = ctx as RouteContext<T>;
   }
   getList(filter?: (route: Route) => boolean): RouteInfo[] {
     return this.routes.filter(filter || (() => true)).map((r) => {
@@ -606,11 +611,11 @@ export class QueryRouter implements throwError {
   /**
    * 获取handle函数, 这里会去执行parse函数
    */
-  getHandle<T = any>(router: QueryRouter, wrapperFn?: HandleFn<T>, ctx?: RouteContext) {
-    return async (msg: { id?: string; path?: string; key?: string;[key: string]: any }, handleContext?: RouteContext) => {
+  getHandle<T = any>(router: QueryRouter, wrapperFn?: HandleFn, ctx?: RouteContext) {
+    return async (msg: { id?: string; path?: string; key?: string;[key: string]: any }, handleContext?: RouteContext<T>) => {
       try {
         const context = { ...ctx, ...handleContext };
-        const res = await router.call(msg, context);
+        const res = await router.call(msg, context) as any;
         if (wrapperFn) {
           res.data = res.body;
           return wrapperFn(res, context);
@@ -663,7 +668,7 @@ export class QueryRouter implements throwError {
         description: '列出当前应用下的所有的路由信息',
         middleware: opts?.middleware || [],
         run: async (ctx: RouteContext) => {
-          const tokenUser = ctx.state.tokenUser;
+          const tokenUser = ctx.state as unknown as { tokenUser?: any };
           let isUser = !!tokenUser;
           const list = this.getList(opts?.filter).filter((item) => {
             if (item.id === 'auth' || item.id === 'auth-can' || item.id === 'check-auth-admin' || item.id === 'auth-admin') {
@@ -724,9 +729,10 @@ interface HandleFn<T = any> {
  * @description 移除server相关的功能，只保留router相关的功能，和http.createServer不相关，独立
  * @template C 自定义 RouteContext 类型
  */
-export class QueryRouterServer<C extends SimpleObject = SimpleObject> extends QueryRouter {
+export class QueryRouterServer<C extends SimpleObject = SimpleObject> extends QueryRouter<C> {
   declare appId: string;
   handle: any;
+  declare context: RouteContext<C>;
   constructor(opts?: QueryRouterServerOpts<C>) {
     super();
     const initHandle = opts?.initHandle ?? true;
@@ -767,18 +773,21 @@ export class QueryRouterServer<C extends SimpleObject = SimpleObject> extends Qu
     }
     return new Route<M, Required<RouteContext<C>>>(path, key, opts);
   }
+  prompt(description: string) {
+    return new Route(undefined, undefined, { description });
+  }
 
   /**
    * 调用了handle
    * @param param0
    * @returns
    */
-  async run(msg: { id?: string; path?: string; key?: string; payload?: any }, ctx?: Partial<RouteContext<C>> & { [key: string]: any }) {
+  async run(msg: { id?: string; path?: string; key?: string; payload?: any }, ctx?: Partial<RouteContext<C>>) {
     const handle = this.handle;
     if (handle) {
       return handle(msg, ctx);
     }
-    return super.run(msg, ctx);
+    return super.run(msg, ctx as RouteContext<C>);
   }
 }
 

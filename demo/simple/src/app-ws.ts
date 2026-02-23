@@ -31,6 +31,7 @@ app.route({
   },
 }).define(async (ctx) => {
   ctx.body = '03';
+  ctx.args.test
   return ctx;
 }).addTo(app);
 // app.server.on({

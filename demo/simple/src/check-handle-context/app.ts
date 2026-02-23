@@ -16,10 +16,16 @@ const queryApp = new QueryRouterServer();
 app
   .route({
     path: 'hello',
+    metadata: {
+      args: {
+        name: 'string',
+      },
+    }
   })
   .define(async (ctx) => {
     // console.log('hello', ctx);
     // console.log('hello', ctx.res);
+    ctx.query.name;
     console.log('hello', ctx.query.cookies);
     // ctx.res?.cookie?.('token', 'abc', {
     //   domain: '*', // 设置为顶级域名，允许跨子域共享

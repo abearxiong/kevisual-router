@@ -26,41 +26,6 @@ qr.add(
     description: 'get project detail2',
     run: async (ctx: RouteContext) => {
       ctx!.body = 'project detail2';
-      return ctx;
-    },
-    validator: {
-      id: {
-        type: 'number',
-        required: true,
-        message: 'id is required',
-      },
-      data: {
-        // @ts-ignore
-        type: 'object',
-        message: 'data query is error',
-        properties: {
-          name: {
-            type: 'string',
-            required: true,
-            message: 'name is required',
-          },
-          age: {
-            type: 'number',
-            required: true,
-            message: 'age is error',
-          },
-          friends: {
-            type: 'object',
-            properties: {
-              hair: {
-                type: 'string',
-                required: true,
-                message: 'hair is required',
-              },
-            },
-          },
-        },
-      },
     },
   }),
 );
@@ -73,7 +38,7 @@ const main = async () => {
     id: 4,
     data: {
       name: 'john',
-      age: 's'+13,
+      age: 's' + 13,
       friends: {
         hair: 'black',
         messages: 'hello',

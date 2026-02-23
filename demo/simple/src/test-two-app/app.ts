@@ -65,8 +65,6 @@ app.importRoutes(app1.exportRoutes());
 
 app.importRoutes(app2.exportRoutes());
 
-app.importApp(app3);
-
 app.listen(4003, () => {
   console.log(`http://localhost:4003/api/router?path=app1&key=02`);
   console.log(`http://localhost:4003/api/router?path=app1&key=01`);

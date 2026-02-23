@@ -20,7 +20,7 @@ router
   .define(async (ctx) => {
     ctx.body = 'Hello, world!';
     // throw new CustomError('error');
-    throw new CustomError(5000, 'error');
+    ctx.throw(5000, 'error');
   })
   .addTo(router);
 
