@@ -1,4 +1,4 @@
-import { AddOpts, QueryRouter, Route, RouteContext, RouteOpts } from './route.ts';
+import { AddOpts, QueryRouter, QueryRouterServer, Route, RouteContext, RouteOpts } from './route.ts';
 import { ServerNode, ServerNodeOpts } from './server/server.ts';
 import { HandleCtx } from './server/server-base.ts';
 import { ServerType } from './server/server-type.ts';
@@ -10,7 +10,7 @@ import { randomId } from './utils/random.ts';
 
 type RouterHandle = (msg: { path: string;[key: string]: any }) => { code: string; data?: any; message?: string;[key: string]: any };
 type AppOptions<T = {}> = {
-  router?: QueryRouter;
+  router?: QueryRouterServer;
   server?: ServerType;
   /** handle msg 关联 */
   routerHandle?: RouterHandle;
@@ -25,12 +25,12 @@ export type AppRouteContext<T = {}> = HandleCtx & RouteContext<T> & { app: App<T
  *  封装了 Router 和 Server 的 App 模块，处理http的请求和响应，内置了 Cookie 和 Token 和 res 的处理
  *  U - Route Context的扩展类型
  */
-export class App<U = {}> extends QueryRouter {
+export class App<U = {}> extends QueryRouterServer {
   declare appId: string;
-  router: QueryRouter;
+  router: QueryRouterServer;
   server: ServerType;
   constructor(opts?: AppOptions<U>) {
-    super();
+    super({ initHandle: false, context: { needSerialize: true, ...opts?.routerContext } });
     const router = this;
     let server = opts?.server;
     if (!server) {
@@ -42,7 +42,6 @@ export class App<U = {}> extends QueryRouter {
       }
     }
     server.setHandle(router.getHandle(router, opts?.routerHandle, opts?.routerContext));
-    router.setContext({ needSerialize: true, ...opts?.routerContext });
     this.router = router;
     this.server = server;
     if (opts?.appId) {
@@ -64,47 +63,15 @@ export class App<U = {}> extends QueryRouter {
     // @ts-ignore
     this.server.listen(...args);
   }
-  addRoute(route: Route, opts?: AddOpts) {
-    super.add(route, opts);
-  }
-
   Route = Route;
   route(opts: RouteOpts<AppRouteContext<U>>): Route<AppRouteContext<U>>;
   route(path: string, key?: string): Route<AppRouteContext<U>>;
   route(path: string, opts?: RouteOpts<AppRouteContext<U>>): Route<AppRouteContext<U>>;
   route(path: string, key?: string, opts?: RouteOpts<AppRouteContext<U>>): Route<AppRouteContext<U>>;
   route(...args: any[]) {
-    const [path, key, opts] = args;
-    if (typeof path === 'object') {
-      return new Route(path.path, path.key, path);
-    }
-    if (typeof path === 'string') {
-      if (opts) {
-        return new Route(path, key, opts);
-      }
-      if (key && typeof key === 'object') {
-        return new Route(path, key?.key || '', key);
-      }
-      return new Route(path, key);
-    }
-    return new Route(path, key, opts);
-  }
-  prompt(description: string): Route<AppRouteContext<U>>
-  prompt(description: Function): Route<AppRouteContext<U>>
-  prompt(...args: any[]) {
-    const [desc] = args;
-    let description = ''
-    if (typeof desc === 'string') {
-      description = desc;
-    } else if (typeof desc === 'function') {
-      description = desc() || ''; // 如果是Promise，需要addTo App之前就要获取应有的函数了。
-    }
-    return new Route('', '', { description });
+    return super.route(...args as any[]);
   }
 
-  async call(message: { id?: string, path?: string; key?: string; payload?: any }, ctx?: AppRouteContext<U> & { [key: string]: any }) {
-    return await super.call(message, ctx);
-  }
   async run(msg: { id?: string, path?: string; key?: string; payload?: any }, ctx?: Partial<AppRouteContext<U>> & { [key: string]: any }) {
     return await super.run(msg, ctx);
   }

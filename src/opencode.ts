@@ -59,9 +59,16 @@ export const createRouterAgentPluginFn = (opts?: {
   if (!router.hasRoute('call', '')) {
     addCallFn(router as App)
   }
-  if (!router.hasRoute('auth', '')) {
-    router.route({ path: 'auth', key: '', id: 'auth', description: '认证' }).define(async (ctx) => { }).addTo(router as App)
+  if (router) {
+    (router as any).route({ path: 'auth', key: '', id: 'auth', description: '认证' }).define(async (ctx) => { }).addTo(router as App, {
+      overwrite: false
+    });
+
+    (router as any).route({ path: 'auth-admin', key: '', id: 'auth-admin', description: '认证' }).define(async (ctx) => { }).addTo(router as App, {
+      overwrite: false
+    })
   }
+
   const _routes = filter(router.routes, opts?.query || '')
   const routes = _routes.filter(r => {
     const metadata = r.metadata as Skill

@@ -6,6 +6,23 @@ import { randomId } from './utils/random.ts';
 import * as schema from './validator/schema.ts';
 
 export type RouterContextT = { code?: number;[key: string]: any };
+
+type ExtractArgs<A> = A extends z.ZodTypeAny ? z.infer<A> : A;
+
+type OptionalKeys<T> = {
+  [K in keyof T]-?: {} extends Pick<T, K> ? K : never;
+}[keyof T];
+
+type MakeOptional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+
+type BuildRouteContext<M, U> = M extends { args?: infer A }
+  ? A extends z.ZodObject<any>
+  ? RouteContext<{ args?: z.infer<A> }, U>
+  : A extends Record<string, z.ZodTypeAny>
+  ? RouteContext<{ args?: { [K in keyof A]: z.infer<A[K]> } }, U>
+  : RouteContext<U>
+  : RouteContext<U>;
+
 export type RouteContext<T = { code?: number }, S = any> = {
   /**
    * 本地自己调用的时候使用，可以标识为当前自调用，那么 auth 就不许重复的校验
@@ -23,7 +40,9 @@ export type RouteContext<T = { code?: number }, S = any> = {
   code?: number;
   /** return msg */
   message?: string;
-  // 传递状态
+  /**
+   * 传递状态
+   */
   state?: S;
   // transfer data
   /**
@@ -127,7 +146,9 @@ export const createSkill = <T = SimpleObject>(skill: Skill<T>): Skill<T> => {
 
 export type RouteInfo = Pick<Route, (typeof pickValue)[number]>;
 
-export class Route<U = { [key: string]: any }, T extends SimpleObject = SimpleObject> implements throwError {
+type ExtractMetadata<M> = M extends { metadata?: infer Meta } ? Meta extends SimpleObject ? Meta : SimpleObject : SimpleObject;
+
+export class Route<M extends SimpleObject = SimpleObject, U extends SimpleObject = SimpleObject, T extends SimpleObject = SimpleObject> implements throwError {
   /**
    * 一级路径
    */
@@ -137,10 +158,10 @@ export class Route<U = { [key: string]: any }, T extends SimpleObject = SimpleOb
    */
   key?: string;
   id?: string;
-  run?: Run;
+  run?: Run<BuildRouteContext<M, U>>;
   nextRoute?: NextRoute; // route to run after this route
   description?: string;
-  metadata?: T;
+  metadata?: M;
   middleware?: RouteMiddleware[]; // middleware
   type? = 'route';
   /**
@@ -161,10 +182,10 @@ export class Route<U = { [key: string]: any }, T extends SimpleObject = SimpleOb
         const delimiter = opts.delimiter ?? '$#$';
         this.id = path + delimiter + key;
       }
-      this.run = opts.run;
+      this.run = opts.run as Run<BuildRouteContext<M, U>>;
       this.nextRoute = opts.nextRoute;
       this.description = opts.description;
-      this.metadata = opts.metadata as T;
+      this.metadata = opts.metadata as M;
       this.type = opts.type || 'route';
       this.middleware = opts.middleware || [];
       this.key = opts.key || key;
@@ -188,9 +209,9 @@ export class Route<U = { [key: string]: any }, T extends SimpleObject = SimpleOb
     return this;
   }
   define<T extends { [key: string]: any } = RouterContextT>(opts: DefineRouteOpts): this;
-  define<T extends { [key: string]: any } = RouterContextT>(fn: Run<T & U>): this;
-  define<T extends { [key: string]: any } = RouterContextT>(key: string, fn: Run<T & U>): this;
-  define<T extends { [key: string]: any } = RouterContextT>(path: string, key: string, fn: Run<T & U>): this;
+  define<T extends { [key: string]: any } = RouterContextT>(fn: Run<T & BuildRouteContext<M, U>>): this;
+  define<T extends { [key: string]: any } = RouterContextT>(key: string, fn: Run<T & BuildRouteContext<M, U>>): this;
+  define<T extends { [key: string]: any } = RouterContextT>(path: string, key: string, fn: Run<T & BuildRouteContext<M, U>>): this;
   define(...args: any[]) {
     const [path, key, opts] = args;
     // 全覆盖，所以opts需要准确，不能由idUsePath 需要check的变量
@@ -213,7 +234,7 @@ export class Route<U = { [key: string]: any }, T extends SimpleObject = SimpleOb
       return this;
     }
     if (typeof path === 'function') {
-      this.run = path;
+      this.run = path as Run<BuildRouteContext<M, U>>;
       return this;
     }
     if (typeof path === 'string' && typeof key === 'function') {
@@ -692,6 +713,7 @@ type QueryRouterServerOpts = {
   handleFn?: HandleFn;
   context?: RouteContext;
   appId?: string;
+  initHandle?: boolean;
 };
 interface HandleFn<T = any> {
   (msg: { path: string;[key: string]: any }, ctx?: any): { code: string; data?: any; message?: string;[key: string]: any };
@@ -706,7 +728,10 @@ export class QueryRouterServer extends QueryRouter {
   handle: any;
   constructor(opts?: QueryRouterServerOpts) {
     super();
-    this.handle = this.getHandle(this, opts?.handleFn, opts?.context);
+    const initHandle = opts?.initHandle ?? true;
+    if (initHandle || opts?.handleFn) {
+      this.handle = this.getHandle(this, opts?.handleFn, opts?.context);
+    }
     this.setContext({ needSerialize: false, ...opts?.context });
     if (opts?.appId) {
       this.appId = opts.appId;
@@ -721,37 +746,25 @@ export class QueryRouterServer extends QueryRouter {
     this.add(route, opts);
   }
   Route = Route;
-  route(opts: RouteOpts): Route<Required<RouteContext>>;
-  route(path: string, key?: string): Route<Required<RouteContext>>;
-  route(path: string, opts?: RouteOpts): Route<Required<RouteContext>>;
-  route(path: string, key?: string, opts?: RouteOpts): Route<Required<RouteContext>>;
-  route(...args: any[]) {
+  route<M extends SimpleObject = SimpleObject>(opts: RouteOpts & { metadata?: M }): Route<M, Required<RouteContext>>;
+  route<M extends SimpleObject = SimpleObject>(path: string, opts?: RouteOpts & { metadata?: M }): Route<M, Required<RouteContext>>;
+  route<M extends SimpleObject = SimpleObject>(path: string, key?: string): Route<M, Required<RouteContext>>;
+  route<M extends SimpleObject = SimpleObject>(path: string, key?: string, opts?: RouteOpts & { metadata?: M }): Route<M, Required<RouteContext>>;
+  route<M extends SimpleObject = SimpleObject>(...args: any[]) {
     const [path, key, opts] = args;
     if (typeof path === 'object') {
-      return new Route(path.path, path.key, path);
+      return new Route<M, Required<RouteContext>>(path.path, path.key, path);
     }
     if (typeof path === 'string') {
       if (opts) {
-        return new Route(path, key, opts);
+        return new Route<M, Required<RouteContext>>(path, key, opts);
       }
       if (key && typeof key === 'object') {
-        return new Route(path, key?.key || '', key);
+        return new Route<M, Required<RouteContext>>(path, key?.key || '', key);
       }
-      return new Route(path, key);
+      return new Route<M, Required<RouteContext>>(path, key);
     }
-    return new Route(path, key, opts);
-  }
-  prompt(description: string): Route<Required<RouteContext>>;
-  prompt(description: Function): Route<Required<RouteContext>>;
-  prompt(...args: any[]) {
-    const [desc] = args;
-    let description = ''
-    if (typeof desc === 'string') {
-      description = desc;
-    } else if (typeof desc === 'function') {
-      description = desc() || ''; // 如果是Promise，需要addTo App之前就要获取应有的函数了。
-    }
-    return new Route('', '', { description });
+    return new Route<M, Required<RouteContext>>(path, key, opts);
   }
 
   /**
