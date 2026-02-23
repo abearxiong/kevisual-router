@@ -25,12 +25,12 @@ export type AppRouteContext<T = {}> = HandleCtx & RouteContext<T> & { app: App<T
  *  封装了 Router 和 Server 的 App 模块，处理http的请求和响应，内置了 Cookie 和 Token 和 res 的处理
  *  U - Route Context的扩展类型
  */
-export class App<U = {}> extends QueryRouterServer {
+export class App<U = {}> extends QueryRouterServer<AppRouteContext<U>> {
   declare appId: string;
   router: QueryRouterServer;
   server: ServerType;
   constructor(opts?: AppOptions<U>) {
-    super({ initHandle: false, context: { needSerialize: true, ...opts?.routerContext } });
+    super({ initHandle: false, context: { needSerialize: true, ...opts?.routerContext } as any });
     const router = this;
     let server = opts?.server;
     if (!server) {
@@ -64,17 +64,6 @@ export class App<U = {}> extends QueryRouterServer {
     this.server.listen(...args);
   }
   Route = Route;
-  route(opts: RouteOpts<AppRouteContext<U>>): Route<AppRouteContext<U>>;
-  route(path: string, key?: string): Route<AppRouteContext<U>>;
-  route(path: string, opts?: RouteOpts<AppRouteContext<U>>): Route<AppRouteContext<U>>;
-  route(path: string, key?: string, opts?: RouteOpts<AppRouteContext<U>>): Route<AppRouteContext<U>>;
-  route(...args: any[]) {
-    return super.route(...args as any[]);
-  }
-
-  async run(msg: { id?: string, path?: string; key?: string; payload?: any }, ctx?: Partial<AppRouteContext<U>> & { [key: string]: any }) {
-    return await super.run(msg, ctx);
-  }
   static handleRequest(req: IncomingMessage, res: ServerResponse) {
     return handleServer(req, res);
   }

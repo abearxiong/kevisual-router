@@ -709,9 +709,9 @@ export class QueryRouter implements throwError {
   fromJSONSchema = fromJSONSchema;
 }
 
-type QueryRouterServerOpts = {
+type QueryRouterServerOpts<C extends SimpleObject = SimpleObject> = {
   handleFn?: HandleFn;
-  context?: RouteContext;
+  context?: RouteContext<C>;
   appId?: string;
   initHandle?: boolean;
 };
@@ -722,11 +722,12 @@ interface HandleFn<T = any> {
 /**
  * QueryRouterServer
  * @description 移除server相关的功能，只保留router相关的功能，和http.createServer不相关，独立
+ * @template C 自定义 RouteContext 类型
  */
-export class QueryRouterServer extends QueryRouter {
+export class QueryRouterServer<C extends SimpleObject = SimpleObject> extends QueryRouter {
   declare appId: string;
   handle: any;
-  constructor(opts?: QueryRouterServerOpts) {
+  constructor(opts?: QueryRouterServerOpts<C>) {
     super();
     const initHandle = opts?.initHandle ?? true;
     if (initHandle || opts?.handleFn) {
@@ -746,25 +747,25 @@ export class QueryRouterServer extends QueryRouter {
     this.add(route, opts);
   }
   Route = Route;
-  route<M extends SimpleObject = SimpleObject>(opts: RouteOpts & { metadata?: M }): Route<M, Required<RouteContext>>;
-  route<M extends SimpleObject = SimpleObject>(path: string, opts?: RouteOpts & { metadata?: M }): Route<M, Required<RouteContext>>;
-  route<M extends SimpleObject = SimpleObject>(path: string, key?: string): Route<M, Required<RouteContext>>;
-  route<M extends SimpleObject = SimpleObject>(path: string, key?: string, opts?: RouteOpts & { metadata?: M }): Route<M, Required<RouteContext>>;
+  route<M extends SimpleObject = SimpleObject>(opts: RouteOpts & { metadata?: M }): Route<M, Required<RouteContext<C>>>;
+  route<M extends SimpleObject = SimpleObject>(path: string, opts?: RouteOpts & { metadata?: M }): Route<M, Required<RouteContext<C>>>;
+  route<M extends SimpleObject = SimpleObject>(path: string, key?: string): Route<M, Required<RouteContext<C>>>;
+  route<M extends SimpleObject = SimpleObject>(path: string, key?: string, opts?: RouteOpts & { metadata?: M }): Route<M, Required<RouteContext<C>>>;
   route<M extends SimpleObject = SimpleObject>(...args: any[]) {
     const [path, key, opts] = args;
     if (typeof path === 'object') {
-      return new Route<M, Required<RouteContext>>(path.path, path.key, path);
+      return new Route<M, Required<RouteContext<C>>>(path.path, path.key, path);
     }
     if (typeof path === 'string') {
       if (opts) {
-        return new Route<M, Required<RouteContext>>(path, key, opts);
+        return new Route<M, Required<RouteContext<C>>>(path, key, opts);
       }
       if (key && typeof key === 'object') {
-        return new Route<M, Required<RouteContext>>(path, key?.key || '', key);
+        return new Route<M, Required<RouteContext<C>>>(path, key?.key || '', key);
       }
-      return new Route<M, Required<RouteContext>>(path, key);
+      return new Route<M, Required<RouteContext<C>>>(path, key);
     }
-    return new Route<M, Required<RouteContext>>(path, key, opts);
+    return new Route<M, Required<RouteContext<C>>>(path, key, opts);
   }
 
   /**
@@ -772,7 +773,7 @@ export class QueryRouterServer extends QueryRouter {
    * @param param0
    * @returns
    */
-  async run(msg: { id?: string; path?: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
+  async run(msg: { id?: string; path?: string; key?: string; payload?: any }, ctx?: Partial<RouteContext<C>> & { [key: string]: any }) {
     const handle = this.handle;
     if (handle) {
       return handle(msg, ctx);
