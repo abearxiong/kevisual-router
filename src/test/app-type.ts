@@ -1,13 +1,62 @@
-import { App } from '../app.ts'
-
-const app = new App<{ f: string }>();
-
+import { App } from "@/app.ts";
+import { QueryRouterServer } from "@/route.ts";
+import z from "zod";
+// 示例 1: 使用 App，它会自动使用 AppRouteContext<U> 作为 ctx 类型
+const app = new App<{
+  customField: string;
+}>();
 app.route({
-  path: 't',
-  run: async (ctx) => {
-    // ctx.r
-    ctx.app;
-  }
+  path: 'test1',
+  metadata: {
+    args: {
+      name: z.string(),
+    }
+  },
 }).define(async (ctx) => {
-  ctx.f = 'hello';
-}).addTo(app);
+  // ctx.app 是 App 类型
+  const appName = ctx.app.appId;
+  
+  // ctx.req 和 ctx.res 来自 HandleCtx
+  const req = ctx.req;
+  const res = ctx.res;
+  
+  // ctx.args 从 metadata.args 推断
+  const name: string = ctx.args.name;
+  
+  // ctx.customField 来自自定义泛型参数
+  const customField: string | undefined = ctx.customField;
+  
+  ctx.body = `Hello ${name}!`;
+});
+// 示例 2: 使用 QueryRouterServer，它可以传递自定义的 Context 类型
+const router = new QueryRouterServer<{
+  routerContextField: number;
+}>();
+router.route({
+  path: 'router-test',
+  metadata: {
+    args: {
+      value: z.number(),
+    }
+  },
+}).define(async (ctx) => {
+  const value: number = ctx.args.value;
+  const field: number | undefined = ctx.routerContextField;
+  
+  ctx.body = value;
+});
+// 示例 3: 不带泛型参数的 QueryRouterServer，使用默认的 RouteContext
+const defaultRouter = new QueryRouterServer();
+defaultRouter.route({
+  path: 'default-test',
+  metadata: {
+    args: {
+      id: z.string(),
+    }
+  },
+}).define(async (ctx) => {
+  const id: string = ctx.args.id;
+  
+  ctx.body = id;
+});
+export { app, router, defaultRouter };
