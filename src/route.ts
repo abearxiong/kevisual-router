@@ -7,14 +7,6 @@ import * as schema from './validator/schema.ts';
 
 export type RouterContextT = { code?: number;[key: string]: any };
 
-type ExtractArgs<A> = A extends z.ZodTypeAny ? z.infer<A> : A;
-
-type OptionalKeys<T> = {
-  [K in keyof T]-?: {} extends Pick<T, K> ? K : never;
-}[keyof T];
-
-type MakeOptional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
-
 type BuildRouteContext<M, U> = M extends { args?: infer A }
   ? A extends z.ZodObject<any>
   ? RouteContext<{ args?: z.infer<A> }, U>
@@ -103,7 +95,7 @@ export type RouteOpts<U = {}, T = SimpleObject> = {
   description?: string;
   metadata?: T;
   middleware?: RouteMiddleware[]; // middleware
-  type?: 'route' | 'middleware';
+  type?: 'route' | 'middleware' | 'compound'; // compound表示这个 route 作为一个聚合体，没有实际的 run，而是一个 router 的聚合列表
   /**
    * $#$ will be used to split path and key
    */
@@ -146,8 +138,6 @@ export const createSkill = <T = SimpleObject>(skill: Skill<T>): Skill<T> => {
 
 export type RouteInfo = Pick<Route, (typeof pickValue)[number]>;
 
-type ExtractMetadata<M> = M extends { metadata?: infer Meta } ? Meta extends SimpleObject ? Meta : SimpleObject : SimpleObject;
-
 /**
  * @M 是 route的 metadate的类型，默认是 SimpleObject
  * @U 是 RouteContext 里 state的类型
@@ -183,7 +173,7 @@ export class Route<M extends SimpleObject = SimpleObject, U extends SimpleObject
     if (opts) {
       this.id = opts.id || randomId(12, 'rand-');
       if (!opts.id && opts.idUsePath) {
-        const delimiter = opts.delimiter ?? '$#$';
+        const delimiter = opts.delimiter ?? '$$';
         this.id = path + delimiter + key;
       }
       this.run = opts.run as Run<BuildRouteContext<M, U>>;
