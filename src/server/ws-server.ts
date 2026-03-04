@@ -56,6 +56,11 @@ export class WsServerBase {
         token,
         id,
       }
+      // @ts-ignore
+      if (!ws.wsId) {
+        // @ts-ignore
+        ws.wsId = this.createId();
+      }
       ws.on('message', async (message: string | Buffer) => {
         await this.server.onWebSocket({ ws, message, pathname, token, id });
       });
@@ -66,7 +71,9 @@ export class WsServerBase {
         this.server.onWsClose(ws);
       });
     });
-
+  }
+  createId() {
+    return Math.random().toString(36).substring(2, 15);
   }
 }
 // TODO: ws handle and path and routerContext

@@ -4,7 +4,7 @@
  * @tags bun, server, websocket, http
  * @createdAt 2025-12-20
  */
-import { ServerType, type ServerOpts, type Cors, RouterRes, RouterReq } from './server-type.ts';
+import { ServerType, type ServerOpts, type Cors, RouterRes, RouterReq, WS } from './server-type.ts';
 import { ServerBase } from './server-base.ts';
 
 export class BunServer extends ServerBase implements ServerType {
@@ -264,10 +264,14 @@ export class BunServer extends ServerBase implements ServerType {
         open: (ws: any) => {
           this.sendConnected(ws);
         },
-        message: async (ws: any, message: string | Buffer) => {
+        message: async (bunWs: any, message: string | Buffer) => {
+          const ws = bunWs as WS;
           const pathname = ws.data.pathname || '';
           const token = ws.data.token || '';
           const id = ws.data.id || '';
+          if (!ws.wsId) {
+            ws.wsId = this.createId();
+          }
           await this.onWebSocket({ ws, message, pathname, token, id });
         },
         close: (ws: any) => {

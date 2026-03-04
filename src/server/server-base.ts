@@ -284,7 +284,7 @@ export class ServerBase implements ServerType {
    * @param ws 
    */
   async onWsClose(ws: WS) {
-    const id = ws?.data?.id || '';
+    const id = ws?.wsId || '';
     if (id) {
       this.emitter.emit('close--' + id, { type: 'close', ws, id });
       setTimeout(() => {
@@ -297,5 +297,8 @@ export class ServerBase implements ServerType {
   async sendConnected(ws: WS) {
     if (this.showConnected)
       ws.send(JSON.stringify({ type: 'connected' }));
+  }
+  createId() {
+    return Math.random().toString(36).substring(2, 15);
   }
 }

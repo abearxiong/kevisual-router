@@ -49,16 +49,33 @@ export type OnWebSocketOptions<T = {}> = {
   message: string | Buffer;
   pathname: string,
   token?: string,
+  /** data 的id提取出来 */
   id?: string,
 }
 export type OnWebSocketFn = (options: OnWebSocketOptions) => Promise<void> | void;
 export type WS<T = {}> = {
   send: (data: any) => void;
   close: (code?: number, reason?: string) => void;
+  /**
+ * ws 自己生成的一个id，主要是为了区分不同的ws连接，方便在onWebSocket中使用
+ */
+  wsId?: string;
   data?: {
+    /**
+     * ws连接时的url，包含pathname和searchParams
+     */
     url: URL;
+    /**
+     * ws连接时的pathname
+     */
     pathname: string;
+    /**
+     * ws连接时的url中的token参数
+     */
     token?: string;
+    /**
+     * ws连接时的url中的id参数.
+     */
     id?: string;
     /**
      * 鉴权后的获取的信息
