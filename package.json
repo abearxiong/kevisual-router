@@ -29,15 +29,15 @@
     "@kevisual/local-proxy": "^0.0.8",
     "@kevisual/query": "^0.0.52",
     "@kevisual/use-config": "^1.0.30",
-    "@opencode-ai/plugin": "^1.2.15",
-    "@types/bun": "^1.3.9",
-    "@types/node": "^25.3.2",
+    "@opencode-ai/plugin": "^1.2.16",
+    "@types/bun": "^1.3.10",
+    "@types/node": "^25.3.3",
     "@types/send": "^1.2.1",
     "@types/ws": "^8.18.1",
     "@types/xml2js": "^0.4.14",
     "eventemitter3": "^5.0.4",
     "fast-glob": "^3.3.3",
-    "hono": "^4.12.3",
+    "hono": "^4.12.5",
     "nanoid": "^5.1.6",
     "path-to-regexp": "^8.3.0",
     "send": "^1.2.1",
@@ -51,7 +51,7 @@
     "url": "git+https://github.com/abearxiong/kevisual-router.git"
   },
   "dependencies": {
-    "es-toolkit": "^1.44.0"
+    "es-toolkit": "^1.45.1"
   },
   "publishConfig": {
     "access": "public"
