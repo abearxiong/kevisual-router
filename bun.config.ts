@@ -14,3 +14,5 @@ await buildWithBun({ naming: 'router-simple', entry: 'src/router-simple.ts', dts
 await buildWithBun({ naming: 'opencode', entry: 'src/opencode.ts', dts: true, external });
 
 await buildWithBun({ naming: 'ws', entry: 'src/ws.ts', dts: true, external });
+
+await buildWithBun({ naming: 'commander', entry: 'src/commander.ts', dts: true, external });
