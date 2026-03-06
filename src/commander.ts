@@ -1,5 +1,5 @@
 import { program } from 'commander';
-import { App } from './app.ts';
+import { App, QueryRouterServer } from './app.ts';
 
 export const groupByPath = (routes: App['routes']) => {
   return routes.reduce((acc, route) => {
@@ -103,10 +103,8 @@ export const createCommand = (opts: { app: App, program: typeof program }) => {
   }
 }
 
-program.parse(process.argv);
-
-export const parse = (opts: { app: App, description?: string, parse?: boolean }) => {
-  const { app, description, parse } = opts;
+export const parse = (opts: { app: QueryRouterServer, description?: string, parse?: boolean }) => {
+  const { app, description, parse = true } = opts;
   program.description(description || 'Router 命令行工具');
   createCommand({ app: app as App, program });
   if (parse) {
