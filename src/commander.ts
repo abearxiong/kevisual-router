@@ -1,4 +1,4 @@
-import { program } from 'commander';
+import { Command, program } from 'commander';
 import { App, QueryRouterServer } from './app.ts';
 
 export const groupByPath = (routes: App['routes']) => {
@@ -62,7 +62,7 @@ export const parseDescription = (route: App['routes'][number]) => {
   }
   return desc;
 }
-export const createCommand = (opts: { app: App, program: typeof program }) => {
+export const createCommand = (opts: { app: App, program: Command }) => {
   const { app, program } = opts;
   const routes = app.routes;
 
@@ -71,7 +71,7 @@ export const createCommand = (opts: { app: App, program: typeof program }) => {
   for (const path in groupRoutes) {
     const routeList = groupRoutes[path];
     const keys = routeList.map(route => route.key).filter(Boolean);
-    const subProgram = program.command(path).description(`路由《${path}》 ${keys.length > 0 ? ': ' + keys.join(', ') : ''}`);
+    const subProgram = program.command(path).description(`路由[${path}] ${keys.length > 0 ? ': ' + keys.join(', ') : ''}`);
     routeList.forEach(route => {
       if (!route.key) return;
       const description = parseDescription(route);
@@ -103,11 +103,12 @@ export const createCommand = (opts: { app: App, program: typeof program }) => {
   }
 }
 
-export const parse = (opts: { app: QueryRouterServer, description?: string, parse?: boolean }) => {
-  const { app, description, parse = true } = opts;
-  program.description(description || 'Router 命令行工具');
-  createCommand({ app: app as App, program });
+export const parse = (opts: { app: QueryRouterServer, description?: string, parse?: boolean, program?: Command }) => {
+  const { app, description, parse = true, } = opts;
+  const _program = opts.program || program;
+  _program.description(description || 'Router 命令行工具');
+  createCommand({ app: app as App, program: _program });
   if (parse) {
-    program.parse(process.argv);
+    _program.parse(process.argv);
   }
 }
