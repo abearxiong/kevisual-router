@@ -271,6 +271,9 @@ const toJSONSchemaRoute = (route: RouteInfo) => {
   if (pickValues?.metadata?.args) {
     pickValues.metadata.args = toJSONSchema(pickValues?.metadata?.args, { mergeObject: false });
   }
+  if (pickValues?.metadata?.returns) {
+    pickValues.metadata.returns = toJSONSchema(pickValues?.metadata?.returns, { mergeObject: false });
+  }
   return pickValues;
 }
 
