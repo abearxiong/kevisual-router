@@ -775,7 +775,7 @@ export class QueryRouterServer<C extends SimpleObject = SimpleObject> extends Qu
    * @param param0
    * @returns
    */
-  async run(msg: { id?: string; path?: string; key?: string; payload?: any }, ctx?: Partial<RouteContext<C>>) {
+  async run(msg: { id?: string; path?: string; key?: string; payload?: any, token?: string, data?: any }, ctx?: Partial<RouteContext<C>>) {
     const handle = this.handle;
     if (handle) {
       return handle(msg, ctx);
