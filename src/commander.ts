@@ -22,8 +22,12 @@ export const parseArgs = (args: string) => {
       for (const pair of pairs) {
         const idx = pair.indexOf('=');
         const key = pair.slice(0, idx);
-        const value = pair.slice(idx + 1);
-        result[key] = value;
+        const raw = pair.slice(idx + 1);
+        let value: string | number | boolean = raw;
+        if (raw === 'true') value = true;
+        else if (raw === 'false') value = false;
+        else if (raw !== '' && !isNaN(Number(raw))) value = Number(raw);
+        result[key] = value as string;
       }
       return result;
     }
@@ -77,8 +81,9 @@ export const createCommand = (opts: { app: App, program: Command }) => {
       const description = parseDescription(route);
       subProgram.command(route.key)
         .description(description || '')
-        .option('--args <args>', 'JSON字符串参数，传递给命令执行')
-        .action(async (options) => {
+        .option('--args <args>', '命令参数，支持 JSON 格式或 key=value 形式，例如: --args \'{"a":1}\' 或 --args \'a=1 b=2\'')
+        .argument('[args...]', '位置参数（推荐通过 -- 分隔传入），支持 JSON 或 key=value 格式，例如: -- a=1 b=2 或 -- \'{"a":1}\'')
+        .action(async (passedArgs: string[], options, _command) => {
           const output = (data: any) => {
             if (typeof data === 'object') {
               process.stdout.write(JSON.stringify(data, null, 2) + '\n');
@@ -87,7 +92,12 @@ export const createCommand = (opts: { app: App, program: Command }) => {
             }
           }
           try {
-            const args = options.args ? parseArgs(options.args) : {};
+            let args: Record<string, any> = {};
+            if (options.args) {
+              args = parseArgs(options.args);
+            } else if (passedArgs.length > 0) {
+              args = parseArgs(passedArgs.join(' '));
+            }
             // 这里可以添加实际的命令执行逻辑，例如调用对应的路由处理函数
             const res = await app.run({ path, key: route.key, payload: args }, { appId: app.appId });
             if (res.code === 200) {
