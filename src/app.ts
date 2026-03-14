@@ -1,4 +1,4 @@
-import { AddOpts, QueryRouter, QueryRouterServer, Route, RouteContext, RouteOpts } from './route.ts';
+import { QueryRouterServer, Route, RouteContext, RouteOpts } from './route.ts';
 import { ServerNode, ServerNodeOpts } from './server/server.ts';
 import { HandleCtx } from './server/server-base.ts';
 import { ServerType } from './server/server-type.ts';

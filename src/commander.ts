@@ -1,6 +1,6 @@
 import { Command, program } from 'commander';
 import { App, QueryRouterServer } from './app.ts';
-
+import { RemoteApp } from '@kevisual/remote-app'
 export const groupByPath = (routes: App['routes']) => {
   return routes.reduce((acc, route) => {
     const path = route.path || 'default';
@@ -66,8 +66,9 @@ export const parseDescription = (route: App['routes'][number]) => {
   }
   return desc;
 }
-export const createCommand = (opts: { app: App, program: Command }) => {
-  const { app, program } = opts;
+export const createCommand = (opts: { app: any, program: Command }) => {
+  const { program } = opts;
+  const app = opts.app as App;
   const routes = app.routes;
 
 
@@ -113,11 +114,61 @@ export const createCommand = (opts: { app: App, program: Command }) => {
   }
 }
 
-export const parse = (opts: { app: QueryRouterServer, description?: string, parse?: boolean, program?: Command }) => {
-  const { app, description, parse = true, } = opts;
+export const parse = async (opts: {
+  app: any,
+  description?: string,
+  parse?: boolean,
+  version?: string,
+  program?: Command,
+  remote?: {
+    token?: string,
+    username?: string,
+    id?: string,
+  }
+}) => {
+  const { description, parse = true, version } = opts;
+  const app = opts.app as App;
   const _program = opts.program || program;
   _program.description(description || 'Router 命令行工具');
+  if (version) {
+    _program.version(version);
+  }
+  app.createRouteList();
+  app.route({
+    path: 'cli',
+    key: 'list'
+  }).define(async () => {
+    const routes = app.routes.map(route => {
+      return {
+        path: route.path,
+        key: route.key,
+        description: route?.metadata?.summary || route.description || '',
+      };
+    });
+    // 输出为表格格式
+    const table = routes.map(route => {
+      return `${route.path} ${route.key} - ${route.description}`;
+    }).join('\n');
+
+    console.log(table);
+  }).addTo(app, { overwrite: false })
+
   createCommand({ app: app as App, program: _program });
+
+  if (opts.remote) {
+    const { token, username, id } = opts.remote;
+    const remoteApp = new RemoteApp({
+      token,
+      username,
+      id,
+    });
+    const isConnect = await remoteApp.isConnect();
+    if (isConnect) {
+      remoteApp.listenProxy();
+      console.log('已连接到远程应用，正在监听命令...');
+    }
+    return
+  }
   if (parse) {
     _program.parse(process.argv);
   }

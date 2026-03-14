@@ -2,7 +2,7 @@ import { CustomError, throwError, CustomErrorOptions } from './result/error.ts';
 import { pick } from './utils/pick.ts';
 import { listenProcess, MockProcess } from './utils/listen-process.ts';
 import { z } from 'zod';
-import { randomId } from './utils/random.ts';
+import { hashIdMd5Sync, randomId } from './utils/random.ts';
 import * as schema from './validator/schema.ts';
 
 export type RouterContextT = { code?: number;[key: string]: any };
@@ -96,14 +96,6 @@ export type RouteOpts<U = {}, T = SimpleObject> = {
   metadata?: T;
   middleware?: RouteMiddleware[]; // middleware
   type?: 'route' | 'middleware' | 'compound'; // compound表示这个 route 作为一个聚合体，没有实际的 run，而是一个 router 的聚合列表
-  /**
-   * $#$ will be used to split path and key
-   */
-  idUsePath?: boolean;
-  /**
-   * id 合并的分隔符，默认为 $#$
-   */
-  delimiter?: string;
   isDebug?: boolean;
 };
 export type DefineRouteOpts = Omit<RouteOpts, 'idUsePath' | 'nextRoute'>;
@@ -170,12 +162,9 @@ export class Route<M extends SimpleObject = SimpleObject, U extends SimpleObject
     key = key.trim();
     this.path = path;
     this.key = key;
+    const pathKey = `${path}$$${key}`;
     if (opts) {
-      this.id = opts.id || randomId(12, 'rand-');
-      if (!opts.id && opts.idUsePath) {
-        const delimiter = opts.delimiter ?? '$$';
-        this.id = path + delimiter + key;
-      }
+      this.id = opts.id || hashIdMd5Sync(pathKey);
       this.run = opts.run as Run<BuildRouteContext<M, U>>;
       this.nextRoute = opts.nextRoute;
       this.description = opts.description;
@@ -186,7 +175,9 @@ export class Route<M extends SimpleObject = SimpleObject, U extends SimpleObject
       this.path = opts.path || path;
     } else {
       this.middleware = [];
-      this.id = randomId(12, 'rand-');
+    }
+    if (!this.id) {
+      this.id = hashIdMd5Sync(pathKey);
     }
     this.isDebug = opts?.isDebug ?? false;
   }
