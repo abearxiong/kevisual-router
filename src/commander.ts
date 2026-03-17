@@ -1,6 +1,7 @@
 import { Command, program } from 'commander';
-import { App, QueryRouterServer } from './app.ts';
+import { App } from './app.ts';
 import { RemoteApp } from '@kevisual/remote-app'
+import z from 'zod';
 export const groupByPath = (routes: App['routes']) => {
   return routes.reduce((acc, route) => {
     const path = route.path || 'default';
@@ -135,25 +136,8 @@ export const parse = async (opts: {
     _program.version(version);
   }
   app.createRouteList();
-  app.route({
-    path: 'cli',
-    key: 'list'
-  }).define(async () => {
-    const routes = app.routes.map(route => {
-      return {
-        path: route.path,
-        key: route.key,
-        description: route?.metadata?.summary || route.description || '',
-      };
-    });
-    // 输出为表格格式
-    const table = routes.map(route => {
-      return `${route.path} ${route.key} - ${route.description}`;
-    }).join('\n');
 
-    console.log(table);
-  }).addTo(app, { overwrite: false })
-
+  createCliList(app);
   createCommand({ app: app as App, program: _program });
 
   if (opts.remote) {
@@ -176,4 +160,96 @@ export const parse = async (opts: {
       process.exit(0);
     }
   }
+}
+
+const createCliList = (app: App) => {
+  app.route({
+    path: 'cli',
+    key: 'list',
+    description: '列出所有可用的命令',
+    metadata: {
+      summary: '列出所有可用的命令',
+      args: {
+        q: z.string().optional().describe('查询关键词，支持模糊匹配命令'),
+        path: z.string().optional().describe('按路径前缀过滤，如 user、admin'),
+        tags: z.string().optional().describe('按标签过滤，多个标签用逗号分隔'),
+        sort: z.enum(['key', 'path', 'name']).optional().describe('排序方式'),
+        limit: z.number().optional().describe('限制返回数量'),
+        offset: z.number().optional().describe('偏移量，用于分页'),
+        format: z.enum(['table', 'simple', 'json']).optional().describe('输出格式'),
+      }
+    }
+  }).define(async (ctx) => {
+    const { q, path: pathFilter, tags, sort, limit, offset, format } = ctx.query as any;
+    let routes = app.routes.map(route => {
+      return {
+        path: route.path,
+        key: route.key,
+        description: route?.metadata?.summary || route.description || '',
+        tags: route?.metadata?.tags || [],
+      };
+    });
+
+    // 路径过滤
+    if (pathFilter) {
+      routes = routes.filter(route => route.path.startsWith(pathFilter));
+    }
+
+    // 标签过滤
+    if (tags) {
+      const tagList = tags.split(',').map((t: string) => t.trim().toLowerCase()).filter(Boolean);
+      if (tagList.length > 0) {
+        routes = routes.filter(route => {
+          const routeTags = Array.isArray(route.tags) ? route.tags.map((t: unknown) => String(t).toLowerCase()) : [];
+          return tagList.some((tag: string) => routeTags.includes(tag));
+        });
+      }
+    }
+
+    // 关键词过滤
+    if (q) {
+      const keyword = q.toLowerCase();
+      routes = routes.filter(route => {
+        return route.path.toLowerCase().includes(keyword) ||
+          route.key.toLowerCase().includes(keyword) ||
+          route.description.toLowerCase().includes(keyword);
+      });
+    }
+
+    // 排序
+    if (sort) {
+      routes.sort((a, b) => {
+        if (sort === 'path') return a.path.localeCompare(b.path);
+        if (sort === 'key') return a.key.localeCompare(b.key);
+        return a.key.localeCompare(b.key); // name 默认为 key
+      });
+    }
+
+    // 分页
+    const total = routes.length;
+    const start = offset || 0;
+    const end = limit ? start + limit : undefined;
+    routes = routes.slice(start, end);
+
+    // 输出
+    const outputFormat = format || 'table';
+    if (outputFormat === 'json') {
+      console.log(JSON.stringify({ total, offset: start, limit, routes }, null, 2));
+      return;
+    }
+
+    if (outputFormat === 'simple') {
+      routes.forEach(route => {
+        console.log(`${route.path} ${route.key}`);
+      });
+      return;
+    }
+
+    // table 格式
+    const table = routes.map(route => {
+      return `${route.path} ${route.key} - ${route.description}`;
+    }).join('\n');
+
+    console.log(table);
+  }).addTo(app, { overwrite: false })
 }
