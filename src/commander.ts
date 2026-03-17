@@ -124,9 +124,10 @@ export const parse = async (opts: {
     token?: string,
     username?: string,
     id?: string,
-  }
+  },
+  exitOnEnd?: boolean,
 }) => {
-  const { description, parse = true, version } = opts;
+  const { description, parse = true, version, exitOnEnd = true } = opts;
   const app = opts.app as App;
   const _program = opts.program || program;
   _program.description(description || 'Router 命令行工具');
@@ -167,9 +168,12 @@ export const parse = async (opts: {
       remoteApp.listenProxy();
       console.log('已连接到远程应用，正在监听命令...');
     }
-    return
+    return;
   }
   if (parse) {
-    _program.parse(process.argv);
+    await _program.parseAsync(process.argv);
+    if (exitOnEnd) {
+      process.exit(0);
+    }
   }
 }
