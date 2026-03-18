@@ -434,7 +434,7 @@ export class QueryRouter<T extends SimpleObject = SimpleObject> implements throw
             console.error('=====debug====:', e);
             console.error('=====debug====:[path:key]:', `${route.path}-${route.key}`);
           }
-          if (e instanceof CustomError) {
+          if (e instanceof CustomError || e?.code) {
             ctx.code = e.code;
             ctx.message = e.message;
           } else {
@@ -781,6 +781,45 @@ export class QueryRouterServer<C extends SimpleObject = SimpleObject> extends Qu
   ) {
     const { path, key, id } = api as any;
     return this.run({ path, key, id, payload }, ctx);
+  }
+  /**
+   * 创建认证相关的中间件，默认是 auth, auth-admin, auth-can 三个中间件
+   * @param fun 认证函数，接收 RouteContext 和认证类型
+   */
+  async createAuth(fun: (ctx: RouteContext<C>, type?: 'auth' | 'auth-admin' | 'auth-can') => any) {
+    this.route({
+      path: 'auth',
+      key: 'auth',
+      id: 'auth',
+      description: 'token验证',
+    }).define(async (ctx) => {
+      if (fun) {
+        await fun(ctx, 'auth');
+      }
+    }).addTo(this, { overwrite: false });
+
+    this.route({
+      path: 'auth-admin',
+      key: 'auth-admin',
+      id: 'auth-admin',
+      description: 'admin token验证',
+      middleware: ['auth']
+    }).define(async (ctx) => {
+      if (fun) {
+        await fun(ctx, 'auth-admin');
+      }
+    }).addTo(this, { overwrite: false });
+
+    this.route({
+      path: 'auth-can',
+      key: 'auth-can',
+      id: 'auth-can',
+      description: '权限验证'
+    }).define(async (ctx) => {
+      if (fun) {
+        await fun(ctx, 'auth-can');
+      }
+    }).addTo(this, { overwrite: false });
   }
 }
 
