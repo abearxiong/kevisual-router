@@ -143,6 +143,7 @@ export const parse = async (opts: {
   if (opts.remote) {
     const { token, username, id } = opts.remote;
     const remoteApp = new RemoteApp({
+      app,
       token,
       username,
       id,
