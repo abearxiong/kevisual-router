@@ -55,7 +55,7 @@ app
 
 | 方法                                | 参数                                      | 说明                                         |
 | ----------------------------------- | ----------------------------------------- | -------------------------------------------- |
-| `ctx.call(msg, ctx?)`               | `{ path, key?, payload?, ... } \| { id }` | 调用其他路由，返回完整 context               |
+| `ctx.call(msg, ctx?)`               | `{ path, key?, payload?, ... } \| { rid }` | 调用其他路由，返回完整 context               |
 | `ctx.run(msg, ctx?)`                | `{ path, key?, payload? }`                | 调用其他路由，返回 `{ code, data, message }` |
 | `ctx.forward(res)`                  | `{ code, data?, message? }`               | 设置响应结果                                 |
 | `ctx.throw(code?, message?, tips?)` | -                                         | 抛出自定义错误                               |
@@ -64,13 +64,13 @@ app
 
 ```ts
 import { App } from '@kevisual/router';
-import z from 'zod';
+import { z } from 'zod';
 const app = new App();
 app.listen(4002);
 
 // 基本路由
 app
-  .route({ path: 'user', key: 'info', id: 'user-info' })
+  .route({ path: 'user', key: 'info', rid: 'user-info' })
   .define(async (ctx) => {
     // ctx.query 包含请求参数
     const { id } = ctx.query;
@@ -129,7 +129,7 @@ const app = new App();
 // 定义中间件
 app
   .route({
-    id: 'auth-example',
+    rid: 'auth-example',
     description: '权限校验中间件',
   })
   .define(async (ctx) => {
@@ -142,7 +142,7 @@ app
   })
   .addTo(app);
 
-// 使用中间件（通过 id 引用）
+// 使用中间件（通过 rid 引用）
 app
   .route({ path: 'admin', key: 'panel', middleware: ['auth-example'] })
   .define(async (ctx) => {
@@ -164,17 +164,17 @@ app
     path: 'dog',
     key: 'info',
     description: '获取狗的信息',
-    metedata: {
+    metadata: {
       args: {
-        owner: z.string().describe('狗主人姓名'),
+        name: z.string().describe('狗的姓名'),
         age: z.number().describe('狗的年龄'),
       },
     },
   })
   .define(async (ctx) => {
-    const { owner, age } = ctx.query;
+    const { name, age } = ctx.query;
     ctx.body = {
-      content: `这是一只${age}岁的狗，主人是${owner}`,
+      content: `这是一只${age}岁的狗，名字是${name}`,
     };
   })
   .addTo(app);

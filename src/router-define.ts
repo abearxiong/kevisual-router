@@ -53,8 +53,8 @@ class Chain {
     this.object.key = key;
     return this;
   }
-  setId(key: string) {
-    this.object.id = key;
+  setRid(key: string) {
+    this.object.rid = key;
     return this;
   }
   setRun<U extends SimpleObject = {}>(run: Run<U>) {

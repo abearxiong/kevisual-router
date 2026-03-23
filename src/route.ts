@@ -78,18 +78,18 @@ export type RouteContext<T = { code?: number }, U extends SimpleObject = {}, S =
 export type SimpleObject = Record<string, any>;
 export type Run<T extends SimpleObject = {}> = (ctx: Required<RouteContext<T>>) => Promise<typeof ctx | null | void>;
 export type RunMessage = { path?: string; key?: string; id?: string; payload?: any; };
-export type NextRoute = Pick<Route, 'id' | 'path' | 'key'>;
+export type NextRoute = Pick<Route, 'rid' | 'path' | 'key'>;
 export type RouteMiddleware =
   | {
     path?: string;
     key?: string;
-    id?: string;
+    rid?: string;
   }
   | string;
 export type RouteOpts<U = {}, T = SimpleObject> = {
   path?: string;
   key?: string;
-  id?: string;
+  rid?: string;
   run?: Run<U>;
   nextRoute?: NextRoute; // route to run after this route
   description?: string;
@@ -99,7 +99,7 @@ export type RouteOpts<U = {}, T = SimpleObject> = {
   isDebug?: boolean;
 };
 export type DefineRouteOpts = Omit<RouteOpts, 'idUsePath' | 'nextRoute'>;
-const pickValue = ['path', 'key', 'id', 'description', 'type', 'middleware', 'metadata'] as const;
+const pickValue = ['path', 'key', 'rid', 'description', 'type', 'middleware', 'metadata'] as const;
 
 
 export type Skill<T = SimpleObject> = {
@@ -143,7 +143,7 @@ export class Route<M extends SimpleObject = SimpleObject, U extends SimpleObject
    * 二级路径
    */
   key?: string;
-  id?: string;
+  rid?: string;
   run?: Run<BuildRouteContext<M, U>>;
   nextRoute?: NextRoute; // route to run after this route
   description?: string;
@@ -164,7 +164,7 @@ export class Route<M extends SimpleObject = SimpleObject, U extends SimpleObject
     this.key = key;
     const pathKey = `${path}$$${key}`;
     if (opts) {
-      this.id = opts.id || hashIdMd5Sync(pathKey);
+      this.rid = opts.rid || hashIdMd5Sync(pathKey);
       this.run = opts.run as Run<BuildRouteContext<M, U>>;
       this.nextRoute = opts.nextRoute;
       this.description = opts.description;
@@ -176,8 +176,8 @@ export class Route<M extends SimpleObject = SimpleObject, U extends SimpleObject
     } else {
       this.middleware = [];
     }
-    if (!this.id) {
-      this.id = hashIdMd5Sync(pathKey);
+    if (!this.rid) {
+      this.rid = hashIdMd5Sync(pathKey);
     }
     this.isDebug = opts?.isDebug ?? false;
   }
@@ -313,7 +313,7 @@ export class QueryRouter<T extends SimpleObject = SimpleObject> implements throw
    * @param uniqueId
    */
   removeById(uniqueId: string) {
-    this.routes = this.routes.filter((r) => r.id !== uniqueId);
+    this.routes = this.routes.filter((r) => r.rid !== uniqueId);
   }
   /**
    * 执行route
@@ -327,7 +327,7 @@ export class QueryRouter<T extends SimpleObject = SimpleObject> implements throw
     const maxNextRoute = this.maxNextRoute;
     ctx = (ctx || {}) as RouteContext<T>;
     ctx.currentPath = path;
-    ctx.currentId = route?.id;
+    ctx.currentId = route?.rid;
     ctx.currentKey = key;
     ctx.currentRoute = route;
     ctx.index = (ctx.index || 0) + 1;
@@ -354,11 +354,11 @@ export class QueryRouter<T extends SimpleObject = SimpleObject> implements throw
           let route: Route | undefined;
           const isString = typeof item === 'string';
           if (isString) {
-            route = this.routes.find((r) => r.id === item);
+            route = this.routes.find((r) => r.rid === item);
           } else {
             route = this.routes.find((r) => {
-              if (item.id) {
-                return r.id === item.id;
+              if (item.rid) {
+                return r.rid === item.rid;
               } else {
                 // key 可以是空，所以可以不严格验证
                 return r.path === item.path && r.key == item.key;
@@ -408,8 +408,8 @@ export class QueryRouter<T extends SimpleObject = SimpleObject> implements throw
               ctx.message = e.message;
               ctx.body = null;
             } else {
-              console.error(`[router error] fn:${route.path}-${route.key}:${route.id}`);
-              console.error(`[router error] middleware:${middleware.path}-${middleware.key}:${middleware.id}`);
+              console.error(`[router error] fn:${route.path}-${route.key}:${route.rid}`);
+              console.error(`[router error] middleware:${middleware.path}-${middleware.key}:${middleware.rid}`);
               console.error(e)
               ctx.code = 500;
               ctx.message = 'Internal Server Error';
@@ -438,7 +438,7 @@ export class QueryRouter<T extends SimpleObject = SimpleObject> implements throw
             ctx.code = e.code;
             ctx.message = e.message;
           } else {
-            console.error(`[router error] fn:${route.path}-${route.key}:${route.id}`);
+            console.error(`[router error] fn:${route.path}-${route.key}:${route.rid}`);
             console.error(`[router error] error`, e);
             ctx.code = 500;
             ctx.message = 'Internal Server Error';
@@ -455,8 +455,8 @@ export class QueryRouter<T extends SimpleObject = SimpleObject> implements throw
           if (route.nextRoute.path || route.nextRoute.key) {
             path = route.nextRoute.path;
             key = route.nextRoute.key;
-          } else if (route.nextRoute.id) {
-            const nextRoute = this.routes.find((r) => r.id === route.nextRoute.id);
+          } else if (route.nextRoute.rid) {
+            const nextRoute = this.routes.find((r) => r.rid === route.nextRoute.rid);
             if (nextRoute) {
               path = nextRoute.path;
               key = nextRoute.key;
@@ -529,14 +529,14 @@ export class QueryRouter<T extends SimpleObject = SimpleObject> implements throw
    * @param ctx
    * @returns
    */
-  async call(message: { id?: string; path?: string; key?: string; payload?: any }, ctx?: RouteContext<T> & { [key: string]: any }) {
+  async call(message: { rid?: string; path?: string; key?: string; payload?: any }, ctx?: RouteContext<T> & { [key: string]: any }) {
     let path = message.path;
     let key = message.key;
     // 优先 path + key
     if (path) {
       return await this.parse({ ...message, path, key }, { ...this.context, ...ctx });
-    } else if (message.id) {
-      const route = this.routes.find((r) => r.id === message.id);
+    } else if (message.rid) {
+      const route = this.routes.find((r) => r.rid === message.rid);
       if (route) {
         path = route.path;
         key = route.key;
@@ -630,11 +630,11 @@ export class QueryRouter<T extends SimpleObject = SimpleObject> implements throw
   hasRoute(path: string, key: string = '') {
     return this.routes.find((r) => r.path === path && r.key === key);
   }
-  findRoute(opts?: { path?: string; key?: string; id?: string }) {
-    const { path, key, id } = opts || {};
+  findRoute(opts?: { path?: string; key?: string; rid?: string }) {
+    const { path, key, rid } = opts || {};
     return this.routes.find((r) => {
-      if (id) {
-        return r.id === id;
+      if (rid) {
+        return r.rid === rid;
       }
       if (path) {
         if (key !== undefined) {
@@ -655,14 +655,14 @@ export class QueryRouter<T extends SimpleObject = SimpleObject> implements throw
           const tokenUser = ctx.state as unknown as { tokenUser?: any };
           let isUser = !!tokenUser;
           const list = this.getList(opts?.filter).filter((item) => {
-            if (item.id === 'auth' || item.id === 'auth-can' || item.id === 'check-auth-admin' || item.id === 'auth-admin') {
+            if (item.rid === 'auth' || item.rid === 'auth-can' || item.rid === 'check-auth-admin' || item.rid === 'auth-admin') {
               return false;
             }
             return true;
           });
           ctx.body = {
             list: list.map((item) => {
-              const route = pick(item, ['id', 'path', 'key', 'description', 'middleware', 'metadata'] as const);
+              const route = pick(item, ['rid', 'path', 'key', 'description', 'middleware', 'metadata'] as const);
               return toJSONSchemaRoute(route);
             }),
             isUser
@@ -766,7 +766,7 @@ export class QueryRouterServer<C extends SimpleObject = SimpleObject> extends Qu
    * @param param0
    * @returns
    */
-  async run(msg: { id?: string; path?: string; key?: string; payload?: any, token?: string, data?: any }, ctx?: Partial<RouteContext<C>>) {
+  async run(msg: { rid?: string; path?: string; key?: string; payload?: any, token?: string, data?: any }, ctx?: Partial<RouteContext<C>>) {
     const handle = this.handle;
     if (handle) {
       return handle(msg, ctx);
@@ -774,13 +774,13 @@ export class QueryRouterServer<C extends SimpleObject = SimpleObject> extends Qu
     return super.run(msg, ctx as RouteContext<C>);
   }
 
-  async runAction<T extends { id?: string; path?: string; key?: string; metadata?: { args?: any } } = {}>(
+  async runAction<T extends { rid?: string; path?: string; key?: string; metadata?: { args?: any } } = {}>(
     api: T,
     payload: RunActionPayload<T>,
     ctx?: RouteContext<C>
   ) {
-    const { path, key, id } = api as any;
-    return this.run({ path, key, id, payload }, ctx);
+    const { path, key, rid } = api as any;
+    return this.run({ path, key, rid, payload }, ctx);
   }
   /**
    * 创建认证相关的中间件，默认是 auth, auth-admin, auth-can 三个中间件
@@ -790,7 +790,7 @@ export class QueryRouterServer<C extends SimpleObject = SimpleObject> extends Qu
     this.route({
       path: 'auth',
       key: 'auth',
-      id: 'auth',
+      rid: 'auth',
       description: 'token验证',
     }).define(async (ctx) => {
       if (fun) {
@@ -801,7 +801,7 @@ export class QueryRouterServer<C extends SimpleObject = SimpleObject> extends Qu
     this.route({
       path: 'auth-admin',
       key: 'auth-admin',
-      id: 'auth-admin',
+      rid: 'auth-admin',
       description: 'admin token验证',
       middleware: ['auth']
     }).define(async (ctx) => {
@@ -813,7 +813,7 @@ export class QueryRouterServer<C extends SimpleObject = SimpleObject> extends Qu
     this.route({
       path: 'auth-can',
       key: 'auth-can',
-      id: 'auth-can',
+      rid: 'auth-can',
       description: '权限验证'
     }).define(async (ctx) => {
       if (fun) {

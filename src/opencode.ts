@@ -60,11 +60,11 @@ export const createRouterAgentPluginFn = (opts?: {
     addCallFn(router as App)
   }
   if (router) {
-    (router as any).route({ path: 'auth', key: '', id: 'auth', description: '认证' }).define(async (ctx) => { }).addTo(router as App, {
+    (router as any).route({ path: 'auth', key: '', rid: 'auth', description: '认证' }).define(async (ctx) => { }).addTo(router as App, {
       overwrite: false
     });
 
-    (router as any).route({ path: 'auth-admin', key: '', id: 'auth-admin', description: '认证' }).define(async (ctx) => { }).addTo(router as App, {
+    (router as any).route({ path: 'auth-admin', key: '', rid: 'auth-admin', description: '认证' }).define(async (ctx) => { }).addTo(router as App, {
       overwrite: false
     })
   }
