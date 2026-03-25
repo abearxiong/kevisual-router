@@ -18,7 +18,7 @@ export const parseArgs = (args: string) => {
   } catch {
     // 尝试解析 a=b b=c 格式
     const result: Record<string, string> = {};
-    const pairs = args.match(/(\S+?)=(\S+)/g);
+    const pairs = args.match(/(\S+?)=(.*?)(?=\s|$)/g);
     if (pairs && pairs.length > 0) {
       for (const pair of pairs) {
         const idx = pair.indexOf('=');
@@ -27,7 +27,8 @@ export const parseArgs = (args: string) => {
         let value: string | number | boolean = raw;
         if (raw === 'true') value = true;
         else if (raw === 'false') value = false;
-        else if (raw !== '' && !isNaN(Number(raw))) value = Number(raw);
+        else if (raw === '') value = true;
+        else if (!isNaN(Number(raw))) value = Number(raw);
         result[key] = value as string;
       }
       return result;
@@ -71,7 +72,6 @@ export const createCommand = (opts: { app: any, program: Command }) => {
   const { program } = opts;
   const app = opts.app as App;
   const routes = app.routes;
-
 
   const groupRoutes = groupByPath(routes);
   for (const path in groupRoutes) {
@@ -174,7 +174,7 @@ const createCliList = (app: App) => {
         q: z.string().optional().describe('查询关键词，支持模糊匹配命令'),
         path: z.string().optional().describe('按路径前缀过滤，如 user、admin'),
         tags: z.string().optional().describe('按标签过滤，多个标签用逗号分隔'),
-        sort: z.enum(['key', 'path', 'name']).optional().describe('排序方式'),
+        sort: z.enum(['key', 'path', '-key', '-path']).optional().describe('排序方式'),
         limit: z.number().optional().describe('限制返回数量'),
         offset: z.number().optional().describe('偏移量，用于分页'),
         format: z.enum(['table', 'simple', 'json']).optional().describe('输出格式'),
@@ -222,6 +222,8 @@ const createCliList = (app: App) => {
       routes.sort((a, b) => {
         if (sort === 'path') return a.path.localeCompare(b.path);
         if (sort === 'key') return a.key.localeCompare(b.key);
+        if (sort === '-path') return b.path.localeCompare(a.path);
+        if (sort === '-key') return b.key.localeCompare(a.key);
         return a.key.localeCompare(b.key); // name 默认为 key
       });
     }
