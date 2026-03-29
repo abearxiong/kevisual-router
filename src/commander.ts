@@ -125,6 +125,8 @@ export const parse = async (opts: {
     token?: string,
     username?: string,
     id?: string,
+    /** https://kevisual.cn/ws/proxy */
+    url?: string,
   },
   exitOnEnd?: boolean,
 }) => {
@@ -141,12 +143,13 @@ export const parse = async (opts: {
   createCommand({ app: app as App, program: _program });
 
   if (opts.remote) {
-    const { token, username, id } = opts.remote;
+    const { token, username, id , url } = opts.remote;
     const remoteApp = new RemoteApp({
       app,
       token,
       username,
       id,
+      url,
     });
     const isConnect = await remoteApp.isConnect();
     if (isConnect) {
