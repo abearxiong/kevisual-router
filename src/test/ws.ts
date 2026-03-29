@@ -7,6 +7,7 @@ app
   .route('demo', '03')
   .define(async (ctx) => {
     ctx.body = '03';
+    ctx.res.end
     return ctx;
   })
   .addTo(app);
