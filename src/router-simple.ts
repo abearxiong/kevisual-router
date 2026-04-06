@@ -277,7 +277,7 @@ export class HttpChain {
       // 每隔 2 秒发送一个空行，保持连接
       setInterval(() => {
         res.write('\n'); // 发送一个空行，保持连接
-      }, 3000);
+      }, 3000).unref?.();
       // 客户端断开连接时清理
       req.on('close', () => {
         clearInterval(intervalId);

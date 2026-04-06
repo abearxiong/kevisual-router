@@ -68,7 +68,7 @@ export const parseDescription = (route: App['routes'][number]) => {
   }
   return desc;
 }
-export const createCommand = (opts: { app: any, program: Command }) => {
+export const createCommandList = (opts: { app: any, program: Command }) => {
   const { program } = opts;
   const app = opts.app as App;
   const routes = app.routes;
@@ -79,7 +79,6 @@ export const createCommand = (opts: { app: any, program: Command }) => {
     const keys = routeList.map(route => route.key).filter(Boolean);
     const subProgram = program.command(path).description(`路由[${path}] ${keys.length > 0 ? ': ' + keys.join(', ') : ''}`);
     routeList.forEach(route => {
-      if (!route.key) return;
       const description = parseDescription(route);
       subProgram.command(route.key)
         .description(description || '')
@@ -130,7 +129,7 @@ export const parse = async (opts: {
   },
   exitOnEnd?: boolean,
 }) => {
-  const { description, parse = true, version, exitOnEnd = true } = opts;
+  const { description, parse = true, version, exitOnEnd = false } = opts;
   const app = opts.app as App;
   const _program = opts.program || program;
   _program.description(description || 'Router 命令行工具');
@@ -140,7 +139,7 @@ export const parse = async (opts: {
   app.createRouteList();
 
   createCliList(app);
-  createCommand({ app: app as App, program: _program });
+  createCommandList({ app: app as App, program: _program });
 
   if (opts.remote) {
     const { token, username, id , url } = opts.remote;

@@ -23,7 +23,7 @@ export class ServerTimer {
         clearInterval(that.timer);
         that.timer = null;
       }
-    }, that.interval);
+    }, that.interval).unref?.();
   }
 
   run(): number {
