@@ -7,7 +7,6 @@
     "sourceMap": false,
     "allowJs": true,
     "newLine": "LF",
-    "baseUrl": "./",
     "typeRoots": [
       "node_modules/@types",
     ],
@@ -20,10 +19,10 @@
     "esModuleInterop": true,
     "paths": {
       "@/*": [
-        "src/*"
+        "./src/*"
       ],
       "@kevisual/router": [
-        "src/index.ts"
+        "./src/index.ts"
       ]
     }
   },
@@ -31,8 +30,5 @@
     "src/**/*.ts",
     "mod.ts"
   ],
-  "exclude": [
-    "node_modules",
-    "rollup.config.js",
-  ]
+  "exclude": []
 }
