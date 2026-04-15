@@ -2,7 +2,6 @@ import { Command, program } from 'commander';
 import { App } from './app.ts';
 import { RemoteApp } from '@kevisual/remote-app'
 import z from 'zod';
-import { create } from 'node:domain';
 export const groupByPath = (routes: App['routes']) => {
   return routes.reduce((acc, route) => {
     const path = route.path || 'default';
