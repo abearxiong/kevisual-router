@@ -24,6 +24,11 @@ app
   })
   .addTo(app);
 ```
+## 浏览器模块使用 router
+
+```ts
+import { App } from '@kevisual/router/browser';
+```
 
 ## 核心概念
 
@@ -112,7 +117,7 @@ app
   .define(async (ctx) => {
     const { id } = ctx.query;
     if (!id) {
-      ctx.throw(400, '缺少参数', 'id is required');
+      ctx.throw(400, '缺少参数：id is required');
     }
     ctx.body = { success: true };
   })
@@ -129,7 +134,7 @@ const app = new App();
 // 定义中间件
 app
   .route({
-    rid: 'auth-example',
+    rid: 'auth',
     description: '权限校验中间件',
   })
   .define(async (ctx) => {
@@ -144,7 +149,7 @@ app
 
 // 使用中间件（通过 rid 引用）
 app
-  .route({ path: 'admin', key: 'panel', middleware: ['auth-example'] })
+  .route({ path: 'admin', key: 'panel', middleware: ['auth'] })
   .define(async (ctx) => {
     // 可以访问中间件设置的 state
     const { tokenUser } = ctx.state;
@@ -163,18 +168,18 @@ app
   .router({
     path: 'dog',
     key: 'info',
-    description: '获取狗的信息',
+    description: '获取小狗的信息',
     metadata: {
       args: {
-        name: z.string().describe('狗的姓名'),
-        age: z.number().describe('狗的年龄'),
+        name: z.string().describe('小狗的姓名'),
+        age: z.number().describe('小狗的年龄'),
       },
     },
   })
   .define(async (ctx) => {
     const { name, age } = ctx.query;
     ctx.body = {
-      content: `这是一只${age}岁的狗，名字是${name}`,
+      content: `这是一只${age}岁的小狗，名字是${name}`,
     };
   })
   .addTo(app);
@@ -184,9 +189,7 @@ app
 
 1. **path 和 key 的组合是路由的唯一标识**，同一个 path+key 只能添加一个路由，后添加的会覆盖之前的。
 
-2. **ctx.call vs ctx.run**：
-   - `call` 返回完整 context，包含所有属性
-   - `run` 返回 `{ code, data, message }` 格式，data 即 body
+2. `ctx.run` 返回 `{ code, data, message }` 格式，data 即 body
 
 3. **ctx.throw 会自动结束执行**，抛出自定义错误。
 
@@ -199,5 +202,3 @@ app
 7. **needSerialize 默认为 true**，会自动对 body 进行 JSON 序列化和反序列化。
 
 8. **progress 记录执行路径**，可用于调试和追踪路由调用链。
-
-9. **中间件找不到会返回 404**，错误信息中会包含找不到的中间件列表。

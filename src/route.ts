@@ -490,13 +490,13 @@ export class QueryRouter<T extends SimpleObject = SimpleObject> implements throw
    * @param ctx
    * @returns
    */
-  async parse(message: { path: string; key?: string; payload?: any }, ctx?: RouteContext<T> & { [key: string]: any }) {
+  async parse(message: { path: string; key?: string; payload?: any, args?: any }, ctx?: RouteContext<T> & { [key: string]: any }) {
     if (!message?.path) {
       return Promise.resolve({ code: 404, body: null, message: 'Not found path' } as RouteContext<T>);
     }
-    const { path, key = '', payload = {}, ...query } = message;
+    const { path, key = '', payload = {}, args = {}, ...query } = message;
     ctx = ctx || {} as RouteContext<T>;
-    ctx.query = { ...ctx.query, ...query, ...payload };
+    ctx.query = { ...ctx.query, ...query, ...payload, ...args };
     ctx.args = ctx.query;
     ctx.state = { ...ctx?.state };
     ctx.throw = this.throw;
@@ -529,7 +529,7 @@ export class QueryRouter<T extends SimpleObject = SimpleObject> implements throw
    * @param ctx
    * @returns
    */
-  async call(message: { rid?: string; path?: string; key?: string; payload?: any }, ctx?: RouteContext<T> & { [key: string]: any }) {
+  async call(message: { rid?: string; path?: string; key?: string; payload?: any, args?: any }, ctx?: RouteContext<T> & { [key: string]: any }) {
     let path = message.path;
     let key = message.key;
     // 优先 path + key
@@ -556,7 +556,7 @@ export class QueryRouter<T extends SimpleObject = SimpleObject> implements throw
    * @deprecated use run or call instead
    * @returns
    */
-  async queryRoute(message: { id?: string; path: string; key?: string; payload?: any }, ctx?: RouteContext & { [key: string]: any }) {
+  async queryRoute(message: { id?: string; path: string; key?: string; payload?: any, args?: any }, ctx?: RouteContext & { [key: string]: any }) {
     const res = await this.call(message, { ...this.context, ...ctx });
     return {
       code: res.code,
@@ -570,7 +570,7 @@ export class QueryRouter<T extends SimpleObject = SimpleObject> implements throw
    * @param ctx 
    * @returns 
    */
-  async run(message: { id?: string; path?: string; key?: string; payload?: any }, ctx?: RouteContext<T> & { [key: string]: any }) {
+  async run(message: { id?: string; path?: string; key?: string; payload?: any, args?: any }, ctx?: RouteContext<T> & { [key: string]: any }) {
     const res = await this.call(message, { ...this.context, ...ctx });
     return {
       code: res.code,
@@ -766,7 +766,7 @@ export class QueryRouterServer<C extends SimpleObject = SimpleObject> extends Qu
    * @param param0
    * @returns
    */
-  async run(msg: { rid?: string; path?: string; key?: string; payload?: any, token?: string, data?: any }, ctx?: Partial<RouteContext<C>>) {
+  async run(msg: { rid?: string; path?: string; key?: string; payload?: any, args?: any, token?: string, data?: any }, ctx?: Partial<RouteContext<C>>) {
     const handle = this.handle;
     if (handle) {
       return handle(msg, ctx);
@@ -786,7 +786,8 @@ export class QueryRouterServer<C extends SimpleObject = SimpleObject> extends Qu
    * 创建认证相关的中间件，默认是 auth, auth-admin, auth-can 三个中间件
    * @param fun 认证函数，接收 RouteContext 和认证类型
    */
-  async createAuth(fun: (ctx: RouteContext<C>, type?: 'auth' | 'auth-admin' | 'auth-can') => any) {
+  async createAuth(fun?: (ctx: RouteContext<C>, type?: 'auth' | 'auth-admin' | 'auth-can') => any, opts?: { overwrite?: boolean }) {
+    const overwrite = opts?.overwrite ?? false;
     this.route({
       path: 'auth',
       key: 'auth',
@@ -796,7 +797,7 @@ export class QueryRouterServer<C extends SimpleObject = SimpleObject> extends Qu
       if (fun) {
         await fun(ctx, 'auth');
       }
-    }).addTo(this, { overwrite: false });
+    }).addTo(this, { overwrite: overwrite });
 
     this.route({
       path: 'auth-admin',
@@ -808,7 +809,7 @@ export class QueryRouterServer<C extends SimpleObject = SimpleObject> extends Qu
       if (fun) {
         await fun(ctx, 'auth-admin');
       }
-    }).addTo(this, { overwrite: false });
+    }).addTo(this, { overwrite: overwrite });
 
     this.route({
       path: 'auth-can',
@@ -819,7 +820,7 @@ export class QueryRouterServer<C extends SimpleObject = SimpleObject> extends Qu
       if (fun) {
         await fun(ctx, 'auth-can');
       }
-    }).addTo(this, { overwrite: false });
+    }).addTo(this, { overwrite: overwrite });
   }
 }
 

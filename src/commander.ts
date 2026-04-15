@@ -2,6 +2,7 @@ import { Command, program } from 'commander';
 import { App } from './app.ts';
 import { RemoteApp } from '@kevisual/remote-app'
 import z from 'zod';
+import { create } from 'node:domain';
 export const groupByPath = (routes: App['routes']) => {
   return routes.reduce((acc, route) => {
     const path = route.path || 'default';
@@ -76,44 +77,53 @@ export const createCommandList = (opts: { app: any, program: Command }) => {
   const groupRoutes = groupByPath(routes);
   for (const path in groupRoutes) {
     const routeList = groupRoutes[path];
-    const keys = routeList.map(route => route.key).filter(Boolean);
+    if (!routeList) continue;
+    const keys = routeList.map(route => route.key)
     const subProgram = program.command(path).description(`路由[${path}] ${keys.length > 0 ? ': ' + keys.join(', ') : ''}`);
     routeList.forEach(route => {
       const description = parseDescription(route);
-      subProgram.command(route.key)
-        .description(description || '')
-        .option('--args <args>', '命令参数，支持 JSON 格式或 key=value 形式，例如: --args \'{"a":1}\' 或 --args \'a=1 b=2\'')
-        .argument('[args...]', '位置参数（推荐通过 -- 分隔传入），支持 JSON 或 key=value 格式，例如: -- a=1 b=2 或 -- \'{"a":1}\'')
-        .action(async (passedArgs: string[], options, _command) => {
-          const output = (data: any) => {
-            if (typeof data === 'object') {
-              process.stdout.write(JSON.stringify(data, null, 2) + '\n');
-            } else {
-              process.stdout.write(String(data) + '\n');
-            }
-          }
-          try {
-            let args: Record<string, any> = {};
-            if (options.args) {
-              args = parseArgs(options.args);
-            } else if (passedArgs.length > 0) {
-              args = parseArgs(passedArgs.join(' '));
-            }
-            // 这里可以添加实际的命令执行逻辑，例如调用对应的路由处理函数
-            const res = await app.run({ path, key: route.key, payload: args }, { appId: app.appId });
-            if (res.code === 200) {
-              output(res.data);
-            } else {
-              output(`Error: ${res.message}`);
-            }
-          } catch (error) {
-            output(`Execution error: ${error instanceof Error ? error.message : String(error)}`);
-          }
-        });
+      if (!route.key) {
+        createCommand(subProgram, { description, app, route });
+        return;
+      }
+      const _sumCommandy = subProgram.command(route.key)
+      createCommand(_sumCommandy, { description, app, route });
     });
   }
 }
-
+export const createCommand = (command: Command, opts: { description?: string, app: App, route: any }) => {
+  const { description, app, route } = opts;
+  const path = route.path;
+  command.description(description || '')
+    .option('--args <args>', '命令参数，支持 JSON 格式或 key=value 形式，例如: --args \'{"a":1}\' 或 --args \'a=1 b=2\'')
+    .argument('[args...]', '位置参数（推荐通过 -- 分隔传入），支持 JSON 或 key=value 格式，例如: -- a=1 b=2 或 -- \'{"a":1}\'')
+    .action(async (passedArgs: string[], options, _command) => {
+      const output = (data: any) => {
+        if (typeof data === 'object') {
+          process.stdout.write(JSON.stringify(data, null, 2) + '\n');
+        } else {
+          process.stdout.write(String(data) + '\n');
+        }
+      }
+      try {
+        let args: Record<string, any> = {};
+        if (options.args) {
+          args = parseArgs(options.args);
+        } else if (passedArgs.length > 0) {
+          args = parseArgs(passedArgs.join(' '));
+        }
+        // 这里可以添加实际的命令执行逻辑，例如调用对应的路由处理函数
+        const res = await app.run({ path, key: route.key, payload: args }, { appId: app.appId });
+        if (res.code === 200) {
+          output(res.data);
+        } else {
+          output(`Error: ${res.message}`);
+        }
+      } catch (error) {
+        output(`Execution error: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    });
+}
 export const parse = async (opts: {
   app: any,
   description?: string,
@@ -142,7 +152,7 @@ export const parse = async (opts: {
   createCommandList({ app: app as App, program: _program });
 
   if (opts.remote) {
-    const { token, username, id , url } = opts.remote;
+    const { token, username, id, url } = opts.remote;
     const remoteApp = new RemoteApp({
       app,
       token,

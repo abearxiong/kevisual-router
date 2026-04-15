@@ -99,7 +99,7 @@ export const listenProcess = async ({ app, mockProcess, params = {}, timeout = 1
      */
     if (!msg.path && !msg.id) {
       const route = app.routes.find(r => r.path !== 'router')
-      msg.id = route?.id
+      msg.id = route?.rid
     }
     // 执行主要逻辑
     const result = await app.run(msg, ctx);

@@ -18,5 +18,5 @@ app
 app.listen(2233, () => {
   console.log('Server is running on http://localhost:2233');
 });
-
+// TODO：有问题， deno，bun 不兼容sendFile，piepStream
 app.onServerRequest(proxyRoute);

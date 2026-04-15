@@ -7,8 +7,13 @@
     "sourceMap": false,
     "allowJs": true,
     "newLine": "LF",
+    "strict": false,
     "typeRoots": [
       "node_modules/@types",
+    ],
+    "types": [
+      "node",
+      "bun"
     ],
     "declaration": false,
     "noEmit": true,

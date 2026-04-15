@@ -12,4 +12,4 @@ router.route({
 }).define(async (ctx) => {
   const argA: string = ctx.args.a;
   ctx.body = '1';
-})
+}).addTo(router);

@@ -1,9 +1,4 @@
-import z from "zod";
-import { App } from "../index.ts";
-import { api as a2 } from './api.js';
-
-const app = new App();
-const api = {
+export declare const api: {
   "app_domain_manager": {
     /**
      * 获取域名信息，可以通过id或者domain进行查询
@@ -74,15 +69,4 @@ const api = {
       }
     }
   }
-} as const;
-type API = typeof api;
-
-// 类型推断生效：payload 根据 metadata.args 自动推断
-// get 的 args.data 是 type:"object"，所以 payload 需要 { data: object }
-app.runAction(a2.app_domain_manager.get, { data: { idd: "1" }, })
-
-// delete 的 args 是 { domainId: { type: "string" } }，所以 payload 需要 { domainId: string }
-app.runAction(api.app_domain_manager.delete, { domainId: "d1" })
-
-// getUser 的 args 是 { userId: string, includeProfile: boolean }
-app.runAction(api.user_manager.getUser, { userId: "u1", includeProfile: true })
+} 
