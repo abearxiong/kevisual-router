@@ -1,4 +1,4 @@
-import { CustomError, throwError, CustomErrorOptions } from './result/error.ts';
+import { CustomError, throwError } from './result/error.ts';
 import { pick } from './utils/pick.ts';
 import { listenProcess, MockProcess } from './utils/listen-process.ts';
 import { z } from 'zod';
@@ -773,7 +773,14 @@ export class QueryRouterServer<C extends SimpleObject = SimpleObject> extends Qu
     }
     return super.run(msg, ctx as RouteContext<C>);
   }
-
+  /**
+   * 调用了handle
+   * @param param0
+   * @returns
+   */
+  async runLocal(msg: { rid?: string; path?: string; key?: string; payload?: any, args?: any, token?: string, data?: any }, ctx?: Partial<RouteContext<C>>) {
+    return this.run(msg, { ...ctx, appId: this.appId } as RouteContext<C>);
+  }
   async runAction<T extends { rid?: string; path?: string; key?: string; metadata?: { args?: any } } = {}>(
     api: T,
     payload: RunActionPayload<T>,
