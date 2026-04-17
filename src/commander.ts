@@ -267,3 +267,7 @@ const createCliList = (app: App) => {
     console.log(table);
   }).addTo(app, { overwrite: false })
 }
+
+export { program }
+
+export { Command }
