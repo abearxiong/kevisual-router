@@ -77,7 +77,7 @@ export type RouteContext<T = { code?: number }, U extends SimpleObject = {}, S =
 } & T & U;
 export type SimpleObject = Record<string, any>;
 export type Run<T extends SimpleObject = {}> = (ctx: Required<RouteContext<T>>) => Promise<typeof ctx | null | void>;
-export type RunMessage = { path?: string; key?: string; id?: string; payload?: any; };
+export type RunMessage = { path?: string; key?: string; rid?: string; payload?: any; };
 export type NextRoute = Pick<Route, 'rid' | 'path' | 'key'>;
 export type RouteMiddleware =
   | {
