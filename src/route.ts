@@ -4,7 +4,7 @@ import { listenProcess, MockProcess } from './utils/listen-process.ts';
 import { z } from 'zod';
 import { hashIdMd5Sync, randomId } from './utils/random.ts';
 import * as schema from './validator/schema.ts';
-
+import type { RunActionPayload, RunActionReturns } from './types/index.ts'
 export type RouterContextT = { code?: number;[key: string]: any };
 
 type BuildRouteContext<M, U> = M extends { args?: infer A }
@@ -781,11 +781,11 @@ export class QueryRouterServer<C extends SimpleObject = SimpleObject> extends Qu
   async runLocal(msg: { rid?: string; path?: string; key?: string; payload?: any, args?: any, token?: string, data?: any }, ctx?: Partial<RouteContext<C>>) {
     return this.run(msg, { ...ctx, appId: this.appId } as RouteContext<C>);
   }
-  async runAction<T extends { rid?: string; path?: string; key?: string; metadata?: { args?: any } } = {}>(
+  async runAction<T extends { rid?: string; path?: string; key?: string; metadata?: { args?: any, returns?: any } } = {}>(
     api: T,
     payload: RunActionPayload<T>,
     ctx?: RouteContext<C>
-  ) {
+  ): Promise<RunActionReturns<T>> {
     const { path, key, rid } = api as any;
     return this.run({ path, key, rid, payload }, ctx);
   }
@@ -834,30 +834,3 @@ export class QueryRouterServer<C extends SimpleObject = SimpleObject> extends Qu
 
 export class Mini extends QueryRouterServer { }
 
-/** JSON Schema 基本类型映射到 TypeScript 类型 */
-type JsonSchemaTypeToTS<T> =
-  T extends { type: "string" } ? string :
-  T extends { type: "boolean" } ? boolean :
-  T extends { type: "number" } ? number :
-  T extends { type: "integer" } ? number :
-  T extends { type: "object" } ? object :
-  T extends { type: "array" } ? any[] :
-  any;
-
-/** 将 args shape（key -> JSON Schema 类型）转换为 payload 类型，支持 optional: true 的字段为可选 */
-type ArgsShapeToPayload<T> =
-  { [K in keyof T as T[K] extends { optional: true } ? never : K]: JsonSchemaTypeToTS<T[K]> } &
-  { [K in keyof T as T[K] extends { optional: true } ? K : never]?: JsonSchemaTypeToTS<T[K]> };
-
-/** 处理两种 args 格式：完整 JSON Schema（含 properties）或简单 key->type 映射 */
-type ArgsToPayload<T> =
-  T extends { type: "object"; properties: infer P }
-  ? ArgsShapeToPayload<P>
-  : ArgsShapeToPayload<T>;
-
-/** 从 API 定义中提取 metadata.args */
-type ExtractArgs<T> =
-  T extends { metadata: { args: infer A } } ? A : {};
-
-/** runAction 第二个参数的类型，根据第一个参数的 metadata.args 推断 */
-export type RunActionPayload<T> = ArgsToPayload<ExtractArgs<T>>;

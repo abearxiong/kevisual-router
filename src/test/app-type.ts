@@ -15,7 +15,7 @@ app.route({
   metadata: {
     args: {
       name: z.string(),
-    }
+    },
   },
 }).define(async (ctx) => {
   // ctx.app 是 App 类型

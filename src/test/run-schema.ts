@@ -70,6 +70,19 @@ const api = {
           "includeProfile": {
             "type": "boolean"
           }
+        },
+        "returns": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "age": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false,
+          "required": ["name", "age"]
         }
       }
     }
@@ -85,4 +98,5 @@ app.runAction(a2.app_domain_manager.get, { data: { idd: "1" }, })
 app.runAction(api.app_domain_manager.delete, { domainId: "d1" })
 
 // getUser 的 args 是 { userId: string, includeProfile: boolean }
-app.runAction(api.user_manager.getUser, { userId: "u1", includeProfile: true })
+const res = await app.runAction(api.user_manager.getUser, { userId: "u1", includeProfile: true })
+const name: string = res.data.name;
