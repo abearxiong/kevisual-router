@@ -60,8 +60,7 @@ import { App } from '@kevisual/router/browser';
 
 | 方法                                | 参数                                      | 说明                                         |
 | ----------------------------------- | ----------------------------------------- | -------------------------------------------- |
-| `ctx.call(msg, ctx?)`               | `{ path, key?, payload?, ... } \| { rid }` | 调用其他路由，返回完整 context               |
-| `ctx.run(msg, ctx?)`                | `{ path, key?, payload? }`                | 调用其他路由，返回 `{ code, data, message }` |
+| `ctx.run(msg, ctx?)`                | `{ path, key?, payload?, ... } \| { rid }`          | 调用其他路由，返回 `{ code, data, message }` |
 | `ctx.forward(res)`                  | `{ code, data?, message? }`               | 设置响应结果                                 |
 | `ctx.throw(code?, message?, tips?)` | -                                         | 抛出自定义错误                               |
 
@@ -170,10 +169,15 @@ app
     key: 'info',
     description: '获取小狗的信息',
     metadata: {
+      // args: 定义请求参数的 zod schema，用于参数校验和类型推断
       args: {
         name: z.string().describe('小狗的姓名'),
         age: z.number().describe('小狗的年龄'),
       },
+      // returns: 定义响应数据的 zod schema，用于返回结果类型推断
+      returns: {
+        content: z.string().describe('小狗的信息描述'),
+      }
     },
   })
   .define(async (ctx) => {
@@ -185,6 +189,78 @@ app
   .addTo(app);
 ```
 
+### metadata.args 参数说明
+
+`args` 是一个 zod schema 对象，用于定义路由的请求参数结构。每个字段的 key 对应请求时传入的参数名，value 为 zod 的类型定义。
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| `name` | `z.string()` | 是 | 小狗的姓名，字符串类型 |
+| `age` | `z.number()` | 是 | 小狗的年龄，数字类型 |
+
+**调用示例：**
+```ts
+// 调用 dog/info 路由
+const res = await app.run({
+  path: 'dog',
+  key: 'info',
+  payload: { name: '旺财', age: 3 }
+});
+// res.data.content => "这是一只3岁的小狗，名字是旺财"
+```
+
+### metadata.returns 返回值说明
+
+`returns` 是一个 zod schema 对象，用于定义路由响应的数据结构。主要用于：
+1. 类型安全：配合 `runAction` 方法进行返回值的类型推断
+2. 文档化：自动生成 API 文档
+
+| 返回字段 | 类型 | 说明 |
+|----------|------|------|
+| `content` | `z.string()` | 小狗的信息描述，字符串类型 |
+
+**返回结构：**
+```ts
+{
+  code: 200,                    // HTTP 状态码
+  data: {                      // 返回的数据，类型由 returns schema 推断
+    content: "这是一只3岁的小狗，名字是旺财"
+  },
+  message: "success"            // 响应消息
+}
+```
+
+### 配合 runAction 使用
+
+当你使用 `runAction` 方法调用路由时，`args` 和 `returns` 会参与类型推断：
+
+```ts
+import { App } from '@kevisual/router';
+import { z } from 'zod';
+
+const app = new App();
+
+// 定义 API 结构
+const dogAPI = {
+  path: 'dog',
+  key: 'info',
+  metadata: {
+    args: {
+      name: z.string(),
+      age: z.number(),
+    },
+    returns: {
+      content: z.string(),
+    }
+  }
+} as const;
+
+// runAction 会根据 metadata.args 推断 payload 类型
+// 根据 metadata.returns 推断返回数据的类型
+const res = await app.runAction(dogAPI, { name: '旺财', age: 3 });
+// res.data.content 会被正确推断为 string 类型
+```
+
 ## 注意事项
 
 1. **path 和 key 的组合是路由的唯一标识**，同一个 path+key 只能添加一个路由，后添加的会覆盖之前的。
@@ -194,11 +270,3 @@ app
 3. **ctx.throw 会自动结束执行**，抛出自定义错误。
 
 4. **payload 会自动合并到 query**，调用 `ctx.run({ path, key, payload })` 时，payload 会合并到 query。
-
-5. **nextQuery 用于传递给 nextRoute**，在当前路由中设置 `ctx.nextQuery`，会在执行 nextRoute 时合并到 query。
-
-6. **避免 nextRoute 循环调用**，默认最大深度为 40 次，超过会返回 500 错误。
-
-7. **needSerialize 默认为 true**，会自动对 body 进行 JSON 序列化和反序列化。
-
-8. **progress 记录执行路径**，可用于调试和追踪路由调用链。
