@@ -63,6 +63,7 @@ import { App } from '@kevisual/router/browser';
 | `ctx.run(msg, ctx?)`                | `{ path, key?, payload?, ... } \| { rid }`          | 调用其他路由，返回 `{ code, data, message }` |
 | `ctx.forward(res)`                  | `{ code, data?, message? }`               | 设置响应结果                                 |
 | `ctx.throw(code?, message?, tips?)` | -                                         | 抛出自定义错误                               |
+| `ctx.safeParseAsync(data?, opts?)`  | `{ schema?, zodOptions?, stop? }`         | 校验路由参数，失败时返回 issues 或自动抛出 422 错误 |
 
 ## 完整示例
 
@@ -161,10 +162,11 @@ app
 
 ```ts
 import { App } from '@kevisual/router';
+import { z } from 'zod';
 const app = new App();
 
 app
-  .router({
+  .route({
     path: 'dog',
     key: 'info',
     description: '获取小狗的信息',
@@ -177,7 +179,9 @@ app
       // returns: 定义响应数据的 zod schema，用于返回结果类型推断
       returns: {
         content: z.string().describe('小狗的信息描述'),
-      }
+      },
+      // check: true 会在路由执行前自动校验 args，失败时返回 422
+      check: true,
     },
   })
   .define(async (ctx) => {
@@ -188,6 +192,14 @@ app
   })
   .addTo(app);
 ```
+
+### metadata 字段说明
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `args` | `Record<string, z.ZodTypeAny> \| z.ZodObject` | 请求参数的 zod schema，用于参数校验和类型推断 |
+| `returns` | `Record<string, z.ZodTypeAny> \| z.ZodObject` | 响应数据的 zod schema，用于返回值类型推断 |
+| `check` | `boolean` | 设为 `true` 时，路由执行前自动校验 `args`，校验失败返回 422 |
 
 ### metadata.args 参数说明
 
@@ -261,12 +273,89 @@ const res = await app.runAction(dogAPI, { name: '旺财', age: 3 });
 // res.data.content 会被正确推断为 string 类型
 ```
 
+## 参数校验
+
+框架集成了 [Zod](https://zod.dev/) v4 进行参数校验，提供两种使用方式。
+
+### 自动校验（metadata.check）
+
+在路由定义中设置 `metadata.check: true`，框架会在路由函数执行前自动校验 `metadata.args` 中定义的参数。校验失败时自动返回 HTTP 422，`body` 为 zod issues 数组。
+
+```ts
+app
+  .route({
+    path: 'user',
+    key: 'create',
+    metadata: {
+      args: {
+        name: z.string(),
+        age: z.number(),
+      },
+      check: true, // 开启自动校验
+    },
+  })
+  .define(async (ctx) => {
+    // 走到这里时参数已通过校验
+    const { name, age } = ctx.query;
+    ctx.body = { name, age };
+  })
+  .addTo(app);
+
+// 校验失败时响应示例：
+// { code: 422, message: 'Validation Error:...', data: [{ code: 'invalid_type', path: ['age'], message: '...' }] }
+```
+
+### 手动校验（ctx.safeParseAsync）
+
+在路由函数内部手动调用 `ctx.safeParseAsync()` 进行校验，可以更灵活地处理校验结果。
+
+```ts
+app
+  .route({
+    path: 'user',
+    key: 'update',
+    metadata: {
+      args: {
+        id: z.string(),
+        name: z.string().optional(),
+      },
+    },
+  })
+  .define(async (ctx) => {
+    // stop: true（默认）时校验失败会自动 throw 422
+    // stop: false 时返回结果由你自行处理
+    const res = await ctx.safeParseAsync(null, { stop: false });
+    if (!res.success) {
+      // res.error.issues 为 zod v4 的错误列表（注意：zod v4 用 issues，不再是 errors）
+      const { fieldErrors } = res.error.flatten();
+      ctx.code = 422;
+      ctx.body = { fieldErrors };
+      return;
+    }
+    ctx.body = { ok: true };
+  })
+  .addTo(app);
+```
+
+**`ctx.safeParseAsync` 参数说明：**
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `data` | `any` | `null` | 额外合并到校验数据中（会与 `ctx.query` 合并） |
+| `opts.schema` | `Record<string, z.ZodTypeAny>` | - | 额外追加的 zod schema 字段 |
+| `opts.zodOptions` | `any` | - | 透传给 zod `safeParseAsync` 的选项 |
+| `opts.stop` | `boolean` | `true` | 校验失败时是否自动 throw 422，`false` 时由调用方自行处理 |
+
+> **注意：** 项目使用 Zod v4，错误信息字段为 `res.error.issues`
+
 ## 注意事项
 
 1. **path 和 key 的组合是路由的唯一标识**，同一个 path+key 只能添加一个路由，后添加的会覆盖之前的。
 
-2. `ctx.run` 返回 `{ code, data, message }` 格式，data 即 body
+2. `ctx.run` 返回 `{ code, data, message }` 格式，data 即 body。
 
-3. **ctx.throw 会自动结束执行**，抛出自定义错误。
+3. **ctx.throw 会自动结束执行**，抛出自定义错误。支持传入 `data` 字段，错误时 `ctx.body` 会被设为该值。
 
 4. **payload 会自动合并到 query**，调用 `ctx.run({ path, key, payload })` 时，payload 会合并到 query。
+
+5. **校验失败响应**：`metadata.check: true` 或 `ctx.safeParseAsync` 默认 stop 模式下，校验失败返回 `code: 422`，`body` 为 zod issues 数组，可直接用于前端表单错误展示。

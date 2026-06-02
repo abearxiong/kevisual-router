@@ -1,6 +1,7 @@
 export type CustomErrorOptions = {
   cause?: Error | string;
   code?: number;
+  data?: any;
   message?: string;
 }
 /** 自定义错误 */
@@ -19,6 +20,9 @@ export class CustomError extends Error {
     this.name = 'RouterError';
     let codeNum = opts?.code || (typeof code === 'number' ? code : undefined);
     this.code = codeNum ?? 500;
+    if (opts.data) {
+      this.data = opts.data;
+    }
     this.message = message!;
     // 这一步可不写，默认会保存堆栈追踪信息到自定义错误构造函数之前，
     // 而如果写成 `Error.captureStackTrace(this)` 则自定义错误的构造函数也会被保存到堆栈追踪信息

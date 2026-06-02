@@ -1,7 +1,7 @@
 import { CustomError, throwError } from './result/error.ts';
 import { pick } from './utils/pick.ts';
 import { listenProcess, MockProcess } from './utils/listen-process.ts';
-import { z } from 'zod';
+import { z, ZodError } from 'zod';
 import { hashIdMd5Sync, randomId } from './utils/random.ts';
 import * as schema from './validator/schema.ts';
 import type { RunActionPayload, RunActionReturns } from './types/index.ts'
@@ -57,6 +57,11 @@ export type RouteContext<T = { code?: number }, U extends SimpleObject = {}, S =
    * 进度
    */
   progress?: [string, string][];
+  safeParseAsync?: (data?: any, opts?: {
+    schema?: { [key: string]: z.ZodTypeAny },
+    zodOptions?: any,
+    stop?: boolean, // 如果验证失败，是否停止后续的 route 执行，默认 true
+  }) => Promise<{ success: boolean; data?: any; error?: any }>;
   // onlyForNextRoute will be clear after next route
   nextQuery?: { [key: string]: any };
   // end
@@ -93,7 +98,7 @@ export type RouteOpts<U = {}, T = SimpleObject> = {
   run?: Run<U>;
   nextRoute?: NextRoute; // route to run after this route
   description?: string;
-  metadata?: T;
+  metadata?: Metadata<T>;
   middleware?: RouteMiddleware[]; // middleware
   type?: 'route' | 'middleware' | 'compound'; // compound表示这个 route 作为一个聚合体，没有实际的 run，而是一个 router 的聚合列表
   isDebug?: boolean;
@@ -129,12 +134,16 @@ export const createSkill = <T = SimpleObject>(skill: Skill<T>): Skill<T> => {
 }
 
 export type RouteInfo = Pick<Route, (typeof pickValue)[number]>;
-
+export type Metadata<T = SimpleObject> = {
+  args?: Record<string, z.ZodTypeAny> | z.ZodObject<any>;
+  returns?: Record<string, z.ZodTypeAny> | z.ZodObject<any>;
+  check?: boolean;
+} & T;
 /**
  * @M 是 route的 metadate的类型，默认是 SimpleObject
  * @U 是 RouteContext 里 state的类型
  */
-export class Route<M extends SimpleObject = SimpleObject, U extends SimpleObject = SimpleObject> implements throwError {
+export class Route<M extends Metadata = Metadata, U extends SimpleObject = SimpleObject> implements throwError {
   /**
    * 一级路径
    */
@@ -315,6 +324,21 @@ export class QueryRouter<T extends SimpleObject = SimpleObject> implements throw
   removeById(uniqueId: string) {
     this.routes = this.routes.filter((r) => r.rid !== uniqueId);
   }
+  safeParseAsyncRoute(data: any, opts: { route: RouteInfo, schema?: { [key: string]: z.ZodTypeAny }, zodOptions?: any }): Promise<{ success: boolean; data?: any; error?: any }> {
+    const route = opts.route;
+    const argZod = route.metadata?.args as Record<string, z.ZodTypeAny>;
+    const schemaZod = opts.schema || {};
+    const zodOptions = opts.zodOptions;
+    const keys = Object.keys(argZod || {});
+    if (argZod && keys.length > 0) {
+      const mgZod = z.object({
+        ...argZod,
+        ...schemaZod
+      });
+      return mgZod.safeParseAsync(data, zodOptions);
+    }
+    return Promise.resolve({ success: true, data });
+  }
   /**
    * 执行route
    * @param path
@@ -332,6 +356,21 @@ export class QueryRouter<T extends SimpleObject = SimpleObject> implements throw
     ctx.currentRoute = route;
     ctx.index = (ctx.index || 0) + 1;
     const progress = [path, key] as [string, string];
+    ctx.safeParseAsync = async (data?: any, opts?: { schema?: { [key: string]: z.ZodTypeAny }, zodOptions?: any, stop?: boolean }) => {
+      const stop = opts?.stop ?? true;
+      const _query = { ...ctx.query, ...data };
+      const res = await this.safeParseAsyncRoute(_query, { route: route, ...opts });
+      if (!res.success && stop) {
+        const issues = res.error.issues;
+        ctx.throw({
+          // Unprocessable Entity
+          code: 422,
+          data: issues,
+          message: 'Validation Error:' + JSON.stringify(issues, null, 2),
+        })
+      }
+      return res;
+    }
     if (ctx.progress) {
       ctx.progress.push(progress);
     } else {
@@ -406,7 +445,7 @@ export class QueryRouter<T extends SimpleObject = SimpleObject> implements throw
             if (e instanceof CustomError || e?.code) {
               ctx.code = e.code;
               ctx.message = e.message;
-              ctx.body = null;
+              ctx.body = e.data;
             } else {
               console.error(`[router error] fn:${route.path}-${route.key}:${route.rid}`);
               console.error(`[router error] middleware:${middleware.path}-${middleware.key}:${middleware.rid}`);
@@ -427,6 +466,9 @@ export class QueryRouter<T extends SimpleObject = SimpleObject> implements throw
     if (route) {
       if (route.run) {
         try {
+          if (route.metadata?.check) {
+            await ctx.safeParseAsync(null, { stop: true });
+          }
           await route.run(ctx as Required<RouteContext<T>>);
         } catch (e) {
           if (route?.isDebug) {
@@ -437,13 +479,14 @@ export class QueryRouter<T extends SimpleObject = SimpleObject> implements throw
           if (e instanceof CustomError || e?.code) {
             ctx.code = e.code;
             ctx.message = e.message;
+            ctx.body = e.data;
           } else {
             console.error(`[router error] fn:${route.path}-${route.key}:${route.rid}`);
             console.error(`[router error] error`, e);
             ctx.code = 500;
             ctx.message = 'Internal Server Error';
+            ctx.body = null;
           }
-          ctx.body = null;
           return ctx;
         }
         if (ctx.end) {
