@@ -872,8 +872,33 @@ export class QueryRouterServer<C extends SimpleObject = SimpleObject> extends Qu
       }
     }).addTo(this, { overwrite: overwrite });
   }
-}
 
+  /**
+   * Register controller classes decorated with @Controller/@Route.
+   * Each @Route decorated method becomes a route on this app.
+   * 
+   * @param controllers - Array of controller classes
+   */
+  registerControllers(controllers: any[]) {
+    for (const ctor of controllers) {
+      const prototype = ctor.prototype;
+      const routeProps = Object.getOwnPropertyNames(prototype).filter((key) => {
+        if (key === 'constructor') return false;
+        const desc = Object.getOwnPropertyDescriptor(prototype, key);
+        return desc && typeof desc.value === 'function' && prototype[key].__route_opts;
+      });
+      const instance = new ctor();
+      for (const key of routeProps) {
+        const opts = prototype[key].__route_opts;
+        const route = new Route(opts.path, opts.key ?? key, {
+          ...opts,
+          run: prototype[key].bind(instance),
+        });
+        route.addTo(this, { overwrite: true });
+      }
+    }
+  }
+}
 
 export class Mini extends QueryRouterServer { }
 

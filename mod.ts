@@ -11,3 +11,5 @@ export type { RouteContext, RouteOpts } from './src/route.ts';
 export type { Run } from './src/route.ts';
 
 export { CustomError } from './src/result/error.ts';
+
+export { Controller, Route as RouteDecorator, registerControllers } from './src/decorators/index.ts';

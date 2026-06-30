@@ -12,6 +12,8 @@ export { createSkill, tool, fromJSONSchema, toJSONSchema } from './route.ts';
 
 export { CustomError } from './result/error.ts';
 
+export { Controller, Route as RouteDecorator, registerControllers } from './decorators/index.ts';
+
 export * from './router-define.ts';
 
 export * from './utils/listen-process.ts'
